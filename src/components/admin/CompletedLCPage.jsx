@@ -1,5 +1,6 @@
 // File: src/pages/admin/CompletedLCPage.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import Card from '../../components/common/Card';
 import DataTable from '../../components/tables/DataTable';
@@ -7,6 +8,8 @@ import Button from '../../components/buttons/Button';
 import { EyeIcon, DocumentArrowDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 const CompletedLCPage = () => {
+  const navigate = useNavigate();
+
   // Sample data for completed LCs
   const [completedLCs, setCompletedLCs] = useState([
     {
@@ -47,11 +50,13 @@ const CompletedLCPage = () => {
     }
   ]);
 
-  // Handle viewing LC details
+  // Handle viewing LC details - using path parameter instead of query parameter
   const handleViewDetails = (lc) => {
     console.log('View details for LC:', lc);
-    // In a real app, you would navigate to a details page or open a modal
+    // Use path parameter instead of query parameter
+    navigate(`/discrepencies/${lc.lcNumber}`);
   };
+  
 
   // Handle downloading LC documents
   const handleDownload = (lc) => {
@@ -144,6 +149,11 @@ const CompletedLCPage = () => {
       </Button>
     </div>
   );
+
+  // // If we're viewing an LC, show the LC details component
+  // if (viewingLC) {
+  //   return <LCDetails lcNumber={viewingLC.lcNumber} onBackClick={handleBackFromDetails} />;
+  // }
 
   return (
     <DashboardLayout>
