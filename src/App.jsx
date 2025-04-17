@@ -34,7 +34,7 @@
 
 // export default App
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route,Navigate } from "react-router-dom";
 import LoginScreen from "./components/auth/LoginScreen";
 import SwiftUploadPanel from "./components/swift/SwiftUploadPanel";
 import LCSupportingDocsUploader from "./components/documents/LCSupportingDocsUploader";
@@ -43,6 +43,7 @@ import Admin1 from "./components/admin/admin1";
 import UploadedLCPage from './components/admin/UploadedLCPage';
 import AssignedLCPage from './components/admin/AssignedLCPage';
 import CompletedLCPage from './components/admin/CompletedLCPage';
+import LCDetails from "./components/discrepancy/LCDetails";
 
 function App() {
   return (
@@ -56,8 +57,8 @@ function App() {
         <Route path="/uploaded" element={<UploadedLCPage />} />
         <Route path="/assigned" element={<AssignedLCPage />} />
         <Route path="/completed" element={<CompletedLCPage />} />
-
-        {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
+        <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
+        {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}LCDetails
       </Routes>
     </Router>
   );
