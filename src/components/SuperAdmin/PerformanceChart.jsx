@@ -1,3 +1,211 @@
+// import React from 'react';
+// import {
+//   LineChart,
+//   Line,
+//   BarChart,
+//   Bar,
+//   PieChart,
+//   Pie,
+//   Cell,
+//   XAxis,
+//   YAxis,
+//   CartesianGrid,
+//   Tooltip,
+//   Legend,
+//   ResponsiveContainer
+// } from 'recharts';
+
+// const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
+// const PerformanceCharts = ({ performanceData }) => {
+//   if (!performanceData) return null;
+
+//   // Task Status Distribution data for Pie chart
+//   const taskStatusData = [
+//     { name: 'Completed', value: performanceData.stats.completed },
+//     { name: 'In Progress', value: performanceData.stats.in_progress },
+//     { name: 'Pending', value: performanceData.stats.pending }
+//   ].filter(item => item.value > 0); // Only include non-zero values
+
+//   // Time Metrics data for Bar chart
+//   const timeMetricsData = [
+//     { 
+//       name: 'Last 7 Days', 
+//       Assigned: performanceData.time_metrics.last_7_days.assigned,
+//       Completed: performanceData.time_metrics.last_7_days.completed
+//     },
+//     { 
+//       name: 'Last 30 Days', 
+//       Assigned: performanceData.time_metrics.last_30_days.assigned,
+//       Completed: performanceData.time_metrics.last_30_days.completed
+//     }
+//   ];
+
+//   // Completion time data
+//   const hasCompletionTimes = performanceData.stats.completion_times && 
+//                           performanceData.stats.completion_times.average > 0;
+
+//   const completionTimeData = hasCompletionTimes ? [
+//     { name: 'Average', hours: performanceData.stats.completion_times.average },
+//     { name: 'Fastest', hours: performanceData.stats.completion_times.fastest },
+//     { name: 'Slowest', hours: performanceData.stats.completion_times.slowest }
+//   ] : [];
+
+//   return (
+//     <div className="space-y-6">
+//       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//         {/* Task Status Distribution Chart */}
+//         <div className="bg-white rounded-lg shadow p-4">
+//           <h3 className="text-lg font-medium text-gray-900 mb-4">Task Status Distribution</h3>
+//           {taskStatusData.length > 0 ? (
+//             <div className="h-64">
+//               <ResponsiveContainer width="100%" height="100%">
+//                 <PieChart>
+//                   <Pie
+//                     data={taskStatusData}
+//                     cx="50%"
+//                     cy="50%"
+//                     innerRadius={60}
+//                     outerRadius={80}
+//                     fill="#8884d8"
+//                     paddingAngle={5}
+//                     dataKey="value"
+//                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+//                   >
+//                     {taskStatusData.map((entry, index) => (
+//                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+//                     ))}
+//                   </Pie>
+//                   <Tooltip formatter={(value) => [`${value} tasks`, 'Count']} />
+//                   <Legend />
+//                 </PieChart>
+//               </ResponsiveContainer>
+//             </div>
+//           ) : (
+//             <div className="flex items-center justify-center h-64 text-gray-500">
+//               No task data available
+//             </div>
+//           )}
+//         </div>
+
+//         {/* Tasks Over Time Chart */}
+//         <div className="bg-white rounded-lg shadow p-4">
+//           <h3 className="text-lg font-medium text-gray-900 mb-4">Tasks Over Time</h3>
+//           <div className="h-64">
+//             <ResponsiveContainer width="100%" height="100%">
+//               <BarChart
+//                 data={timeMetricsData}
+//                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+//               >
+//                 <CartesianGrid strokeDasharray="3 3" />
+//                 <XAxis dataKey="name" />
+//                 <YAxis />
+//                 <Tooltip />
+//                 <Legend />
+//                 <Bar dataKey="Assigned" fill="#8884d8" />
+//                 <Bar dataKey="Completed" fill="#82ca9d" />
+//               </BarChart>
+//             </ResponsiveContainer>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Completion Time Chart */}
+//       {hasCompletionTimes && (
+//         <div className="bg-white rounded-lg shadow p-4">
+//           <h3 className="text-lg font-medium text-gray-900 mb-4">Completion Time Metrics (Hours)</h3>
+//           <div className="h-64">
+//             <ResponsiveContainer width="100%" height="100%">
+//               <BarChart
+//                 data={completionTimeData}
+//                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+//               >
+//                 <CartesianGrid strokeDasharray="3 3" />
+//                 <XAxis dataKey="name" />
+//                 <YAxis />
+//                 <Tooltip formatter={(value) => [`${value} hours`, 'Time']} />
+//                 <Bar dataKey="hours" fill="#FF8042" />
+//               </BarChart>
+//             </ResponsiveContainer>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Completion Rate Gauge */}
+//       <div className="bg-white rounded-lg shadow p-4">
+//         <h3 className="text-lg font-medium text-gray-900 mb-4">Key Performance Indicators</h3>
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+//           <div className="bg-gray-50 p-4 rounded-lg text-center">
+//             <div className="text-sm font-medium text-gray-500 mb-1">Completion Rate</div>
+//             <div className="text-2xl font-bold text-blue-600">{performanceData.stats.completion_rate}%</div>
+//             <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+//               <div 
+//                 className="bg-blue-600 h-2.5 rounded-full" 
+//                 style={{ width: `${performanceData.stats.completion_rate}%` }}
+//               ></div>
+//             </div>
+//           </div>
+//           <div className="bg-gray-50 p-4 rounded-lg text-center">
+//             <div className="text-sm font-medium text-gray-500 mb-1">Total Assigned</div>
+//             <div className="text-2xl font-bold text-indigo-600">{performanceData.stats.total_assigned}</div>
+//           </div>
+//           <div className="bg-gray-50 p-4 rounded-lg text-center">
+//             <div className="text-sm font-medium text-gray-500 mb-1">Completed Tasks</div>
+//             <div className="text-2xl font-bold text-green-600">{performanceData.stats.completed}</div>
+//           </div>
+//           <div className="bg-gray-50 p-4 rounded-lg text-center">
+//             <div className="text-sm font-medium text-gray-500 mb-1">Pending Tasks</div>
+//             <div className="text-2xl font-bold text-amber-600">{performanceData.stats.pending}</div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Activity Timeline */}
+//       <div className="bg-white rounded-lg shadow p-4">
+//         <h3 className="text-lg font-medium text-gray-900 mb-4">Activity Timeline</h3>
+//         <div className="space-y-4">
+//           <div className="flex items-center">
+//             <div className="flex-shrink-0">
+//               <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+//                 </svg>
+//               </div>
+//             </div>
+//             <div className="ml-4">
+//               <h4 className="text-sm font-medium text-gray-900">Last Assigned Task</h4>
+//               <p className="text-sm text-gray-500">
+//                 {performanceData.last_activity.last_assigned ? 
+//                   new Date(performanceData.last_activity.last_assigned).toLocaleString() : 
+//                   'No assigned tasks yet'}
+//               </p>
+//             </div>
+//           </div>
+//           <div className="flex items-center">
+//             <div className="flex-shrink-0">
+//               <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
+//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+//                 </svg>
+//               </div>
+//             </div>
+//             <div className="ml-4">
+//               <h4 className="text-sm font-medium text-gray-900">Last Completed Task</h4>
+//               <p className="text-sm text-gray-500">
+//                 {performanceData.last_activity.last_completed ? 
+//                   new Date(performanceData.last_activity.last_completed).toLocaleString() : 
+//                   'No completed tasks yet'}
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default PerformanceCharts;
+
 import React from 'react';
 import {
   LineChart,
