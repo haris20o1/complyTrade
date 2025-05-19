@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-//import { LogOut, CheckCircle, FileText, Upload, AlertCircle } from 'lucide-react';
 import { LogOut, FileText, CheckCircle, XCircle, AlertTriangle, Loader } from 'lucide-react';
 
 import FileUploader from '../swift/FileUploader';
 import ErrorDropdown from '../swift/ErrorDropdown';
+import { validateLcNumber, uploadSupportingDocuments, getWebSocketUrl } from '../authentication/apiSupportingDocs';
+import { logoutUser } from '../authentication/auth';
 
 const LCSupportingDocsUploader = () => {
   // State management
@@ -48,15 +49,19 @@ const LCSupportingDocsUploader = () => {
     }
   };
 
-  const handleSignOut = () => {
-    // Clear auth tokens
-    localStorage.removeItem('access_token');
-    
-    // Redirect to login page
-    window.location.href = '/';
+  const handleSignOut = async () => {
+    try {
+      await logoutUser();
+      // Redirect to login page is already handled in logoutUser()
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Fallback for error cases
+      localStorage.removeItem('access_token');
+      window.location.href = '/';
+    }
   };
 
-  const validateLcNumber = async () => {
+  const handleLcValidation = async () => {
     if (!lcNumber.trim()) {
       setLcValidationError('Please enter an LC number');
       setLcValidated(false);
@@ -68,24 +73,9 @@ const LCSupportingDocsUploader = () => {
     setLcValidated(false);
     
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in again.');
-      }
+      const data = await validateLcNumber(lcNumber);
       
-      // Validate LC number with API
-      const response = await fetch(`https://192.168.18.62:50013/lc/validate_lc/${lcNumber}`, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.message === "LC Number is valid") {
+      if (data.message === "LC Number is valid") {
         setLcValidated(true);
         setLcValidationError('');
         return true;
@@ -95,7 +85,6 @@ const LCSupportingDocsUploader = () => {
         return false;
       }
     } catch (error) {
-      console.error('LC validation error:', error);
       setLcValidated(false);
       setLcValidationError('Error validating LC number. Please try again.');
       return false;
@@ -114,7 +103,7 @@ const LCSupportingDocsUploader = () => {
 
   const handleLcBlur = () => {
     if (lcNumber.trim()) {
-      validateLcNumber();
+      handleLcValidation();
     }
   };
 
@@ -221,12 +210,7 @@ const LCSupportingDocsUploader = () => {
     cleanupWebSocket();
     
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-      
-      const wsUrl = `wss://192.168.18.62:50013/supporting_docs/ws/progress/${id}?token=${encodeURIComponent(token)}`;
+      const wsUrl = getWebSocketUrl(id);
       const socket = new WebSocket(wsUrl);
       socketRef.current = socket;
       
@@ -274,7 +258,7 @@ const LCSupportingDocsUploader = () => {
 
   const handleUpload = async () => {
     if (!lcValidated) {
-      const isValid = await validateLcNumber();
+      const isValid = await handleLcValidation();
       if (!isValid) return;
     }
     
@@ -298,30 +282,7 @@ const LCSupportingDocsUploader = () => {
     cleanupWebSocket();
 
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in again.');
-      }
-      
-      const formData = new FormData();
-      files.forEach(file => {
-        formData.append('files', file);
-      });
-
-      const response = await fetch(`https://192.168.18.62:50013/supporting_docs/upload_docs/?lc_no=${lcNumber}`, {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = await uploadSupportingDocuments(lcNumber, files);
       
       const newSessionId = data.session_id;
       setSessionId(newSessionId);
@@ -452,7 +413,7 @@ const LCSupportingDocsUploader = () => {
             {!lcValidated && !lcValidationError && !lcValidating && (
               <button
                 type="button"
-                onClick={validateLcNumber}
+                onClick={handleLcValidation}
                 className="mt-3 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Validate LC Number
@@ -460,6 +421,7 @@ const LCSupportingDocsUploader = () => {
             )}
           </div>
           
+          {/* Same UI components as before - Document Upload Section, File List, Progress Indicators, etc. */}
           {/* Document Upload Section (only shown after LC validation) */}
           {lcValidated && (
             <div className="mt-8">
@@ -615,7 +577,6 @@ const LCSupportingDocsUploader = () => {
 };
 
 export default LCSupportingDocsUploader;
-
 
 
 // import React, { useState, useEffect, useRef } from 'react';

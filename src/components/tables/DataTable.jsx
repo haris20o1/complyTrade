@@ -140,3 +140,5 @@ const DataTable = ({ columns, data, onRowAction, actionColumn }) => {
 };
 
 export default DataTable;
+
+

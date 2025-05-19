@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
+import { loginUser } from '../authentication/auth';
+
 
 const LoginScreen = () => {
   const navigate = useNavigate();
@@ -26,43 +28,34 @@ const LoginScreen = () => {
     setError('');
     
     try {
-      // Format form data for API call
-      const formData = new URLSearchParams();
-      formData.append('grant_type', '');
-      formData.append('username', credentials.username);
-      formData.append('password', credentials.password);
-      formData.append('scope', '');
-      formData.append('client_id', '');
-      formData.append('client_secret', '');
-      
-      // Call authentication API
-      const response = await fetch('https://192.168.18.62:50013/authenticate/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'accept': 'application/json'
-        },
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error('Authentication failed');
-      }
-      
-      const data = await response.json();
+      const data = await loginUser(credentials.username, credentials.password);
       
       // Store token in localStorage or sessionStorage for future API calls
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('token_type', data.token_type);
       localStorage.setItem('user_role', data.role);
       
+      // Handle password_expired flag if needed
+      // if (data.password_expired) {
+      //   navigate('/change-password');
+      //   return;  
+      // }
+      
       // Redirect based on role
-      if (data.role === 'Admin') {
+      if (data.role === 'admin') {
         navigate('/dashboard');
       } else if (data.role === 'support') {
         navigate('/supporting-docs');
       } else if (data.role === 'swift') {
         navigate('/swift-upload');
+      } else if (data.role === 'complyce_manager') {
+        navigate('/dashboardd');
+      } else if (data.role === 'it_admin') {
+        navigate('/users');
+      } else if (data.role === 'it_admin') {
+        navigate('/policies');
+      } else if (data.role === 'super_admin') {
+        navigate('/super');
       } else {
         // Handle unknown role
         setError('Unknown user role. Please contact administrator.');
