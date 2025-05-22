@@ -322,7 +322,7 @@ const handleSaveDraft = async () => {
       
       // Navigate after a short delay to allow the user to see the success message
       setTimeout(() => {
-        navigate('/completed');
+        navigate('/complete');
       }, 2000);
     } catch (error) {
       console.error("Error generating report:", error);

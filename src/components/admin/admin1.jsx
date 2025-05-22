@@ -765,17 +765,10 @@ const fetch_recent_activities = async () => {
   }
 };
 
+// Replace the existing formatActionText function with this:
 const formatActionText = (activity) => {
-  switch(activity.status) {
-    case 'completed':
-      return `LC-${activity.lc_no} completed by ${activity.user_name}`;
-    case 'assign':
-      return `LC-${activity.lc_no} assigned to ${activity.user_name}`;
-    case 'remove':
-      return `LC-${activity.lc_no} removed by ${activity.user_name}`;
-    default:
-      return `LC-${activity.lc_no} updated by ${activity.user_name}`;
-  }
+  // Return the comment directly from the new API response format
+  return activity.comment;
 };
 
 const AdminDashboard = () => {
@@ -1194,12 +1187,9 @@ const AdminDashboard = () => {
                             <p className="text-sm text-gray-800 font-medium">
                               {formatActionText(activity)}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              {activity.admin_name ? `Assigned by ${activity.admin_name}` : "System action"}
-                            </p>
                           </div>
                           <div className="text-xs text-gray-500 whitespace-nowrap">
-                            <span>{formatTimeAgo(activity.log_date)}</span>
+                            <span>{formatTimeAgo(activity.timestamp)}</span>
                           </div>
                         </div>
                       </div>

@@ -69,7 +69,7 @@ export const userService = {
   }
 };
 
-// LC related API service (from your example)
+// LC related API service
 export const lcService = {
   // Get all LCs
   getAllLCs: async () => {
@@ -103,40 +103,53 @@ export const lcService = {
       throw error;
     }
   },
-
 };
+
+// Audit service API
 export const auditService = {
-    // Request an audit
-    requestAudit: async () => {
-      try {
-        const response = await axiosInstance.get('/it_admin/request-audit');
-        return response.data;
-      } catch (error) {
-        console.error('Error requesting audit:', error);
-        throw error;
-      }
-    },
-    
-    // Get audit status
-    getAuditStatus: async () => {
-      try {
-        const response = await axiosInstance.get('/it_admin/audit-status');
-        return response.data;
-      } catch (error) {
-        console.error('Error getting audit status:', error);
-        throw error;
-      }
-    },
-
-    getAuditLogs: async () => {
-      try {
-        const response = await axiosInstance.get('/it_admin/audit-logs');
-        return response.data;
-      } catch (error) {
-        console.error('Error fetching audit logs:', error);
-        throw error;
-      }
+  // Request an audit for a specific user
+  requestAudit: async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/it_admin/request-audit/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error requesting audit:', error);
+      throw error;
     }
-  };
+  },
+  
+  // Get audit status
+  getAuditStatus: async () => {
+    try {
+      const response = await axiosInstance.get('/it_admin/audit-status');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting audit status:', error);
+      throw error;
+    }
+  },
 
-export default { axiosInstance, userService, lcService,auditService };
+  // Get audit logs for a specific user
+  getAuditLogs: async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/it_admin/audit-logs/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+      throw error;
+    }
+  },
+  
+  // Get all audit requests
+  getAuditRequests: async () => {
+    try {
+      const response = await axiosInstance.get('/super_admin/audit-requests');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching audit requests:', error);
+      throw error;
+    }
+  }
+};
+
+export default { axiosInstance, userService, lcService, auditService };

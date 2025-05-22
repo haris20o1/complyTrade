@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { auditService } from "../authentication/apiITManager";
+import { auditService, userService } from "../authentication/apiITManager";
 import { 
   AlertTriangle, 
   CheckCircle, 
@@ -7,8 +7,11 @@ import {
   FileText, 
   Shield, 
   Activity, 
-  Calendar, 
-  RefreshCw 
+  User,
+  RefreshCw,
+  Eye,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import DashboardLayout from "../layouts/DashboardLayout";
 
@@ -17,6 +20,9 @@ const RequestAuditPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [auditExists, setAuditExists] = useState(false);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [users, setUsers] = useState([]);
+  
   const [auditStatus, setAuditStatus] = useState({
     lastAuditDate: "March 15, 2025",
     status: "completed", // pending, in-progress, completed
@@ -26,27 +32,36 @@ const RequestAuditPage = () => {
     findings: 3,
     criticalIssues: 1
   });
+  
+  const [auditRequests, setAuditRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  
   const [auditLogs, setAuditLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showLogs, setShowLogs] = useState(false);
 
   // Function to request an audit
   const handleRequestAudit = async () => {
+    if (!selectedUser) {
+      setError("Please select a user to request audit for");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSuccess(false);
     
     try {
-      const response = await auditService.requestAudit();
+      const response = await auditService.requestAudit(selectedUser);
       setSuccess(true);
-      // Check the response after successful audit request
-      getAuditStatus();
-      // Refresh audit logs after requesting a new audit
-      fetchAuditLogs();
+      // Refresh audit requests after requesting a new audit
+      fetchAuditRequests();
     } catch (err) {
       // Check if error is because audit already exists
       if (err.response && err.response.data && err.response.data.detail === "Audit request already exists for this user") {
         setAuditExists(true);
-        setError("An audit request is already pending. Please wait for it to be processed.");
+        setError("An audit request is already pending for this user. Please wait for it to be processed.");
       } else {
         setError("Failed to request audit. Please try again later.");
       }
@@ -68,24 +83,58 @@ const RequestAuditPage = () => {
     }
   };
 
-  // Function to fetch audit logs from the API
-  const fetchAuditLogs = async () => {
-    setLoadingLogs(true);
+  // Function to fetch users
+  const fetchUsers = async () => {
     try {
-      const logs = await auditService.getAuditLogs();
-      // Set all logs without filtering
+      const usersList = await userService.getAllUsers();
+      setUsers(usersList);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+    }
+  };
+
+  // Function to fetch audit requests from the API
+  const fetchAuditRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const requests = await auditService.getAuditRequests();
+      setAuditRequests(requests);
+    } catch (err) {
+      console.error("Failed to fetch audit requests:", err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  // Function to fetch audit logs for a specific user
+  const fetchAuditLogs = async (userId) => {
+    // Clear previous logs immediately to avoid showing stale data
+    setAuditLogs([]);
+    setLoadingLogs(true);
+    setSelectedUserId(userId);
+    setShowLogs(true);
+    
+    try {
+      const logs = await auditService.getAuditLogs(userId);
       setAuditLogs(logs);
     } catch (err) {
       console.error("Failed to fetch audit logs:", err);
+      // Ensure logs are empty on error
+      setAuditLogs([]);
     } finally {
       setLoadingLogs(false);
     }
   };
   
-  // Get audit status and logs on component mount
+  // Get audit status, users, and requests on component mount
   useEffect(() => {
     getAuditStatus();
-    fetchAuditLogs();
+    fetchUsers();
+    fetchAuditRequests();
+    
+    // Clear audit logs when component mounts
+    setAuditLogs([]);
+    setShowLogs(false);
   }, []);
   
   // Determine what message/color to show based on status
@@ -132,6 +181,23 @@ const RequestAuditPage = () => {
   
   const statusDetails = getStatusDetails();
 
+    // Add this to your existing state variables at the top level of your component
+  const [sortDirection, setSortDirection] = useState('desc'); // 'desc' for most recent first
+
+  // Add this function to your component
+  const toggleSortDirection = () => {
+    setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+  };
+
+  // Add this before the return statement
+  // Create sorted version of audit requests
+  const sortedAuditRequests = [...auditRequests].sort((a, b) => {
+    const dateA = new Date(a.created_at);
+    const dateB = new Date(b.created_at);
+    return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+  });
+
+
   return (
     <DashboardLayout>
     <div className="p-6">
@@ -139,71 +205,6 @@ const RequestAuditPage = () => {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Security Audit Management</h2>
         <p className="text-gray-600">Request and monitor security audits for your banking system</p>
       </div>
-      
-      {/* Audit Status Card */}
-      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className={`bg-white rounded-lg shadow-md p-6 border-l-4 border-${statusDetails.color}-500 col-span-3`}>
-          <div className="flex items-center mb-4">
-            {statusDetails.icon}
-            <h3 className="ml-2 text-lg font-medium text-gray-900">Audit Status</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-              <div className={`flex items-center text-${statusDetails.color}-600`}>
-                {statusDetails.icon}
-                <span className="ml-1 font-medium capitalize">{auditStatus.status}</span>
-              </div>
-              <p className="mt-2 text-sm text-gray-600">{statusDetails.message}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Last Audit</p>
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                <span className="font-medium">{auditStatus.lastAuditDate}</span>
-              </div>
-              <p className="mt-2 text-sm text-gray-600">Type: {auditStatus.auditType}</p>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Completion</p>
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 text-gray-500 mr-1" />
-                <span className="font-medium">{auditStatus.completionDate}</span>
-              </div>
-              <p className="mt-2 text-sm text-gray-600">By: {auditStatus.auditedBy}</p>
-            </div>
-          </div>
-          
-          {auditStatus.status === "completed" && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-900">Total Findings</p>
-                    <p className="text-lg font-bold text-yellow-600">{auditStatus.findings} issues</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-900">Critical Issues</p>
-                    <p className="text-lg font-bold text-red-600">{auditStatus.criticalIssues} found</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div> */}
       
       {/* Request Audit Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -214,8 +215,33 @@ const RequestAuditPage = () => {
           </div>
           
           <p className="text-gray-600 mb-6">
-            Initiate a new security audit of your banking system. This will request our security team to perform a comprehensive assessment of all security controls.
+            Initiate a new security audit for a specific user. This will request our security team to perform a comprehensive assessment of all security controls.
           </p>
+          
+          {/* User Selection Dropdown */}
+          <div className="mb-4">
+            <label htmlFor="user-select" className="block text-sm font-medium text-gray-700 mb-1">
+              Select User for Audit
+            </label>
+            <div className="relative">
+              <select
+                id="user-select"
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+              >
+                <option value="">Select a user</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.fullname} ({user.role})
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <User className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
           
           {error && (
             <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
@@ -246,9 +272,9 @@ const RequestAuditPage = () => {
           <div className="flex items-center justify-between mt-4">
             <button 
               onClick={handleRequestAudit}
-              disabled={loading || auditExists}
+              disabled={loading || auditExists || !selectedUser}
               className={`px-4 py-2 rounded flex items-center ${
-                loading || auditExists 
+                loading || auditExists || !selectedUser
                   ? 'bg-gray-300 cursor-not-allowed' 
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
@@ -268,8 +294,9 @@ const RequestAuditPage = () => {
             
             <button 
               onClick={() => {
-                getAuditStatus();
-                fetchAuditLogs();
+                fetchAuditRequests();
+                setError(null);
+                setSuccess(false);
               }}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center"
             >
@@ -298,6 +325,7 @@ const RequestAuditPage = () => {
               <h4 className="font-medium text-gray-900">Audit process</h4>
               <ol className="mt-1 text-gray-600 list-decimal list-inside space-y-1">
                 <li>Submit an audit request (requires IT Manager approval)</li>
+                <li>Super Admin reviews and approves the request</li>
                 <li>Security team schedules and performs the audit</li>
                 <li>Findings and recommendations are documented</li>
                 <li>Results are shared with stakeholders</li>
@@ -319,18 +347,19 @@ const RequestAuditPage = () => {
             </p>
           </div>
         </div>
-        
       </div>
-      <div className="bg-white rounded-lg shadow-md p-6">
+      
+      {/* Audit Requests Table */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
-            <Clock className="h-5 w-5 text-blue-500" />
-            <h3 className="ml-2 text-lg font-medium text-gray-900">Audit History</h3>
+            <Activity className="h-5 w-5 text-blue-500" />
+            <h3 className="ml-2 text-lg font-medium text-gray-900">Audit Requests</h3>
           </div>
-          {loadingLogs && (
+          {loadingRequests && (
             <div className="flex items-center text-gray-500">
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Loading audit logs...
+              Loading audit requests...
             </div>
           )}
         </div>
@@ -339,40 +368,72 @@ const RequestAuditPage = () => {
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested For</th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th> */}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button 
+                    onClick={toggleSortDirection}
+                    className="flex items-center focus:outline-none text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Date
+                    {sortDirection === 'desc' ? 
+                      <ChevronDown className="h-4 w-4 ml-1" /> : 
+                      <ChevronUp className="h-4 w-4 ml-1" />
+                    }
+                  </button>
+                </th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested By</th> */}
+                
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {auditLogs.length > 0 ? (
-                auditLogs.map((log) => (
-                  <tr key={log.id}>
+              {auditRequests.length > 0 ? (
+                sortedAuditRequests.map((request) => (
+                  <tr key={request.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(log.timestamp)}
+                      {request.request_for_name}
                     </td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      #{request.id}
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {log.action.replace(/_/g, ' ').toUpperCase()}
+                      {formatDate(request.created_at)}
                     </td>
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {request.requested_by_name}
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.comment}
+                      {request.request_for_role}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Completed
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        request.status === 'approved' 
+                          ? 'bg-green-100 text-green-800'
+                          : request.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <a href="#" className="text-blue-600 hover:text-blue-900 mr-4">View Report</a>
+                      <button 
+                        onClick={() => fetchAuditLogs(request.request_for_id)}
+                        className="text-blue-600 hover:text-blue-900 flex items-center"
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Logs
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                    {loadingLogs ? "Loading audit logs..." : "No audit logs found."}
+                  <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
+                    {loadingRequests ? "Loading audit requests..." : "No audit requests found."}
                   </td>
                 </tr>
               )}
@@ -380,13 +441,13 @@ const RequestAuditPage = () => {
           </table>
         </div>
         
-        {auditLogs.length === 0 && !loadingLogs && (
+        {auditRequests.length === 0 && !loadingRequests && (
           <div className="flex flex-col items-center justify-center p-6 text-gray-500">
             <AlertTriangle className="h-12 w-12 mb-4 text-gray-400" />
-            <p className="text-lg font-medium">No audit logs available</p>
-            <p className="text-sm mt-2">You may not have permission to view logs yet, or no audit activity has been recorded.</p>
+            <p className="text-lg font-medium">No audit requests available</p>
+            <p className="text-sm mt-2">You haven't made any audit requests yet, or no audit activity has been recorded.</p>
             <button 
-              onClick={fetchAuditLogs}
+              onClick={fetchAuditRequests}
               className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -395,7 +456,82 @@ const RequestAuditPage = () => {
           </div>
         )}
       </div>
-    
+      
+      {/* Audit Logs Section - Visible only when logs are requested */}
+      {showLogs && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Clock className="h-5 w-5 text-blue-500" />
+              <h3 className="ml-2 text-lg font-medium text-gray-900">
+                Audit Logs for User ID: {selectedUserId}
+              </h3>
+            </div>
+            <button 
+              onClick={() => {
+                setShowLogs(false);
+                setAuditLogs([]);  // Clear logs when closing
+              }}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              Close
+            </button>
+          </div>
+          
+          {loadingLogs ? (
+            <div className="flex justify-center items-center p-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target LC</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comment</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {auditLogs.length > 0 ? (
+                    auditLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          #{log.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatDate(log.timestamp)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {log.action.replace(/_/g, ' ').toUpperCase()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {log.target_lc_no}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {log.target_user_id}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {log.comment}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                        No audit logs found for this user.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
     </DashboardLayout>
   );
