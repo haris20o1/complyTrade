@@ -90,19 +90,29 @@ export const getUserRole = async () => {
   try {
     console.log('Making request to /authenticate/verify...');
     
-    // The /authenticate/verify endpoint should return role information
     const response = await axiosInstance.get('/authenticate/verify');
     
     console.log('Response status:', response.status);
-    console.log('Response data:', response.data);
+    console.log('Full response data:', response.data);
     
-    if (response.data && response.data.role) {
-      console.log('Role found in response:', response.data.role);
-      console.log('Role type:', typeof response.data.role);
-      return response.data.role;
+    // Try multiple possible role field names
+    const role = response.data.role || 
+                 response.data.user_role || 
+                 response.data.userRole ||
+                 response.data.user?.role ||
+                 response.data.user?.user_role;
+    
+    if (role) {
+      console.log('Role found:', role);
+      console.log('Role type:', typeof role);
+      return role;
     } else {
-      console.log('No role found in response data');
+      console.log('No role found in any expected field');
       console.log('Available keys in response.data:', Object.keys(response.data || {}));
+      
+      // If the response structure is different, log it for debugging
+      console.log('Complete response structure:', JSON.stringify(response.data, null, 2));
+      
       return null;
     }
   } catch (error) {

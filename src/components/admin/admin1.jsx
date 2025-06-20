@@ -709,6 +709,10 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import axiosInstance from '../authentication/axios';
+
+// import { useWebSocket } from '../../context/WebSocketContext';
+
+
 import { 
   ClipboardDocumentCheckIcon,
   ChevronRightIcon,
@@ -740,6 +744,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+
 
 const fetch_lcs_stats = async () => {
   try {
@@ -777,7 +782,17 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasPermission, setHasPermission] = useState(true);
- 
+
+  // const { 
+  //   isConnected, 
+  //   connectionStatus, 
+  //   lastMessage, 
+  //   connect, 
+  //   disconnect, 
+  //   sendMessage 
+  // } = useWebSocket();
+
+
   const colors = {
     total: {
       base: 'rgba(178, 171, 171, 0.366)',      
@@ -827,6 +842,7 @@ const AdminDashboard = () => {
       bgColor: colors.pending.light
     }
   ]);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -889,7 +905,16 @@ const AdminDashboard = () => {
     };
 
     fetchData();
+    // Connect to WebSocket after data is fetched
+  //      connect();
+
+  //  // Cleanup function
+  //    return () => {
+  //        disconnect();
+  //    };
+ 
   }, []);
+
 
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);

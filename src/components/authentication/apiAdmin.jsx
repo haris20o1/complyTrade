@@ -63,6 +63,7 @@
 // export default lcService;
 
 import { axiosInstance } from './axios';
+// import { mockLcService } from '../discrepancy/sevices/mockLcService';
 
 // LC related API functions
 export const lcService = {
@@ -141,7 +142,13 @@ export const lcService = {
       throw error;
     }
   },
-
+  // getLCSupportDocsDiscrepancies: mockLcService.getLCSupportDocsDiscrepancies,
+  // updateDiscrepancy: mockLcService.updateDiscrepancy,
+  // addDiscrepancy: mockLcService.addDiscrepancy,
+  // updateLCDiscrepancies: mockLcService.updateLCDiscrepancies,
+  // getLCTimeline: mockLcService.getLCTimeline,
+  // deleteLC: mockLcService.deleteLC,
+  // getPriceVerificationData: mockLcService.getPriceVerificationData,
   getLCSupportDocsDiscrepancies: async (lcNumber) => {
     try {
       const response = await axiosInstance.get(`/admin/${lcNumber}/support_docs_discrepancies`);
@@ -196,21 +203,17 @@ export const lcService = {
     }
   },
   
-  
+  // Delete LC
+deleteLC: async (lcNumber) => {
+  try {
+    const response = await axiosInstance.delete(`/admin/lcs/${lcNumber}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting LC ${lcNumber}:`, error);
+    throw error;
+  }
+},
 
 };
-// export const fetch_lcs_stats= async () => {
-//   const response = await axiosInstance.get("/admin/lcs_stats");
-//   console.log(response.data)
-//   return response.data;
-
-// };
-
-// export const fetch_recent_activities= async () => {
-//   const response = await axiosInstance.get("/admin/recent_activities");
-//   console.log(response.data)
-//   return response.data;
-
-// };
 
 export default lcService;

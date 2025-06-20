@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LogOut, FileText, CheckCircle, XCircle, AlertTriangle, Loader } from 'lucide-react';
-
 import FileUploader from '../swift/FileUploader';
 import ErrorDropdown from '../swift/ErrorDropdown';
 import { validateLcNumber, uploadSupportingDocuments, getWebSocketUrl } from '../authentication/apiSupportingDocs';
@@ -123,87 +122,152 @@ const LCSupportingDocsUploader = () => {
   };
 
   // WebSocket processing response handler
-  const handleProcessingResponse = (data) => {
-    // Update current document name
-    if (data.progress && data.progress.Doc_name) {
-      setCurrentDocName(data.progress.Doc_name);
-      
-      // Store processed file information
-      if (data.progress.processing_status && data.progress.Doc_name) {
-        // Check if file already processed
-        const fileExists = processedFiles.some(file => file.name === data.progress.Doc_name);
-        
-        if (!fileExists) {
-          const newProcessedFile = {
-            name: data.progress.Doc_name,
-            status: data.progress.processing_status,
-            error: data.progress.processing_error !== "None" ? data.progress.processing_error : null,
-            url: data.progress.doc_url || null
-          };
-          
-          setProcessedFiles(prev => [...prev, newProcessedFile]);
-          
-          // Handle errors
-          if (data.progress.processing_status === "Error") {
-            const errorMessage = data.progress.processing_error || 'Unknown error';
-            
-            setErrors(prevErrors => [
-              ...prevErrors,
-              {
-                id: Date.now().toString(),
-                fileName: data.progress.Doc_name || 'Unknown file',
-                name: 'Processing Error',
-                description: errorMessage,
-                lineNumber: null,
-                lineContent: null,
-                suggestion: errorMessage.includes("Unsupported File type") 
-                  ? `The file type "${errorMessage.split(" ").pop()}" is not supported. Please upload documents in a supported format.`
-                  : 'Please check the file format and try again with supported file types.'
-              }
-            ]);
-            
-            setUploadStatus('error');
-            setErrorMessage('One or more files failed to process. See details below.');
-            
-            if (errorMessage.includes("Unsupported File type")) {
-              setUnsupportedFileError({
-                fileName: data.progress.Doc_name,
-                fileType: errorMessage.split(" ").pop()
-              });
-            }
-          }
-        }
-      }
-    }
-    
-    // Update progress
-    if (data.progress && typeof data.progress.file_idx !== 'undefined' && data.progress.total) {
-      const progressPercentage = ((data.progress.file_idx) / data.progress.total) * 100;
-      setUploadProgress(progressPercentage);
-    }
-    
-    // Update processing status
-    if (data.status) {
-      setProcessingStatus(data.status);
-    }
-    
-    // Check if processing completed
-    if (data.status === 'completed') {
-      setUploadProgress(100);
-      cleanupWebSocket();
-      setUploading(false);
-      setUploadStatus('success');
-      
-      if (errors.length > 0 || processedFiles.some(file => file.status === "Error")) {
-        setErrorMessage('One or more files failed to process. See details below.');
-      }
-      
-      return true;
-    }
-    
-    return false;
-  };
   
+// Smooth progress simulation timer
+const progressTimerRef = useRef(null);
+
+// const startProgressSimulation = () => {
+//   if (progressTimerRef.current) {
+//     clearInterval(progressTimerRef.current);
+//   }
+  
+//   progressTimerRef.current = setInterval(() => {
+//     setUploadProgress(prev => {
+//       // Don't update if we're already at completion or have real progress
+//       if (prev >= 90) {
+//         clearInterval(progressTimerRef.current);
+//         return prev;
+//       }
+      
+//       // Simulate gradual progress increase
+//       const increment = Math.random() * 3 + 1; // Random increment between 1-4%
+//       return Math.min(prev + increment, 85); // Cap at 85% during simulation
+//     });
+//   }, 1500); // Update every 1.5 seconds
+// };
+
+// const stopProgressSimulation = () => {
+//   if (progressTimerRef.current) {
+//     clearInterval(progressTimerRef.current);
+//     progressTimerRef.current = null;
+//   }
+// };
+
+// Updated WebSocket processing response handler with smooth progress
+// Updated WebSocket processing response handler with accurate progress calculation
+// Updated WebSocket processing response handler with accurate progress calculation
+const handleProcessingResponse = (data) => {
+  console.log('WebSocket response:', data);
+  
+  // Handle the new API response format
+  if (data.progress !== undefined && data.status && data.lc_no) {
+    const progress = data.progress;
+    const status = data.status;
+    const processed = data.processed || 0;
+    const lastUpdate = data.last_update;
+    
+    // Update progress bar with exact API progress
+    setUploadProgress(progress);
+    
+    // Handle different status states
+    switch (status) {
+      case 'processing':
+        setProcessingStatus('processing');
+        setCurrentDocName('Starting document processing...');
+        break;
+        
+      case 'in-progress':
+        setProcessingStatus('in-progress');
+        
+        // Show processing details if available
+        if (lastUpdate && lastUpdate.doc_path) {
+          // Extract document name from path if needed, or use a generic message
+          const docName = lastUpdate.doc_name || `Document ${processed}`;
+          setCurrentDocName(`Processing: ${docName} (${processed} completed)`);
+        } else {
+          setCurrentDocName(`Processing documents... (${processed} completed)`);
+        }
+        
+        // Update processed files list if we have document details
+        if (lastUpdate && lastUpdate.status === 'completed' && processed > 0) {
+          setProcessedFiles(prevFiles => {
+            // Only add if we have enough information and it's not already added
+            const docPath = lastUpdate.doc_path;
+            const fileExists = prevFiles.some(file => file.path === docPath);
+            
+            if (!fileExists && docPath) {
+              return [...prevFiles, {
+                name: lastUpdate.doc_name || `Document ${processed}`,
+                status: lastUpdate.status,
+                path: docPath,
+                error: null
+              }];
+            }
+            return prevFiles;
+          });
+        }
+        break;
+        
+      case 'completed':
+        setProcessingStatus('completed');
+        setCurrentDocName('Processing complete');
+        setUploadProgress(100); // Ensure we reach 100%
+        
+        // Finalize the upload process
+        setTimeout(() => {
+          cleanupWebSocket();
+          setUploading(false);
+          setUploadStatus('success');
+          
+          // Check if there were any errors in the processed files
+          setProcessedFiles(prevFiles => {
+            const hasErrors = prevFiles.some(file => file.status === "Error" || file.error);
+            if (hasErrors) {
+              setErrorMessage('One or more files failed to process. See details below.');
+            }
+            return prevFiles;
+          });
+        }, 500); // Small delay to ensure UI updates smoothly
+        break;
+        
+      case 'error':
+        setProcessingStatus('error');
+        setCurrentDocName('Processing failed');
+        setUploading(false);
+        setUploadStatus('error');
+        setErrorMessage('Document processing failed. Please try again.');
+        cleanupWebSocket();
+        break;
+        
+      default:
+        console.log('Unknown status:', status);
+    }
+    
+    return true;
+  }
+  
+  // Fallback for any other message formats (keep existing error handling)
+  if (data.error) {
+    setErrors(prevErrors => [
+      ...prevErrors,
+      {
+        id: Date.now().toString(),
+        fileName: data.fileName || 'Unknown file',
+        name: 'Processing Error',
+        description: data.error,
+        lineNumber: null,
+        lineContent: null,
+        suggestion: 'Please check the file format and try again.'
+      }
+    ]);
+    
+    setUploadStatus('error');
+    setErrorMessage('One or more files failed to process.');
+  }
+  
+  return false;
+};
+
   // WebSocket monitoring function
   const startWebSocketMonitoring = (id) => {
     reconnectAttemptsRef.current = 0;
@@ -256,6 +320,7 @@ const LCSupportingDocsUploader = () => {
     }
   };
 
+  // Also update the handleUpload function to set initial progress more accurately
   const handleUpload = async () => {
     if (!lcValidated) {
       const isValid = await handleLcValidation();
@@ -267,38 +332,44 @@ const LCSupportingDocsUploader = () => {
       setUploadStatus('error');
       return;
     }
-
+  
     setUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(0); // Start at 0 - will be updated by WebSocket
     setErrorMessage('');
     setErrors([]);
     setUploadStatus(null);
     setProcessingStatus('initializing');
-    setCurrentDocName('');
+    setCurrentDocName('Preparing upload...');
     setSessionId('');
     setUnsupportedFileError(null);
     setProcessedFiles([]);
-
+  
     cleanupWebSocket();
-
+  
     try {
+      // Show upload initiation
+      setCurrentDocName('Uploading files to server...');
+      
       const data = await uploadSupportingDocuments(lcNumber, files);
       
       const newSessionId = data.session_id;
       setSessionId(newSessionId);
-      setProcessingStatus('processing');
+      setProcessingStatus('uploaded');
+      setCurrentDocName('Files uploaded, waiting for processing...');
       
+      // Start WebSocket monitoring - progress will be handled by WebSocket messages
       startWebSocketMonitoring(newSessionId);
       
-      // Safety timeout
+      // Safety timeout - if no WebSocket messages received
+      const timeoutDuration = Math.max(300000, files.length * 30000); // 5 minutes minimum, +30s per file
       setTimeout(() => {
-        if (uploading) {
+        if (uploading && uploadProgress === 0) {
           cleanupWebSocket();
           setUploading(false);
           setUploadStatus('error');
-          setErrorMessage('Processing timed out. Please check the status manually.');
+          setErrorMessage('No response from server. Please check the status manually.');
         }
-      }, 300000);
+      }, timeoutDuration);
       
     } catch (error) {
       console.error('Upload error:', error);
@@ -327,7 +398,7 @@ const LCSupportingDocsUploader = () => {
       setUploadProgress(0);
     }
   };
-
+  
   const resetUpload = () => {
     cleanupWebSocket();
     
@@ -463,41 +534,81 @@ const LCSupportingDocsUploader = () => {
               
               {/* Upload Progress */}
               {uploading && (
-                <div className="mt-6 bg-blue-50 rounded-md p-4 border border-blue-100">
-                  <h4 className="text-sm font-medium text-blue-800 mb-2">
-                    {processingStatus === 'processing' ? 'Processing Documents' : 'Uploading Files'}
-                  </h4>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                  
-                  <div className="mt-2 flex justify-between items-center text-xs text-blue-700">
-                    <span>{currentDocName ? `Processing: ${currentDocName}` : processingStatus}</span>
-                    <span>{Math.round(uploadProgress)}% complete</span>
-                  </div>
-                  
-                  {/* Processed Files List */}
-                  {processedFiles.length > 0 && (
-                    <div className="mt-3">
-                      <h5 className="text-xs font-medium text-blue-800 mb-1">Processing Status:</h5>
-                      <ul className="text-xs space-y-1">
-                        {processedFiles.map((file, index) => (
-                          <li key={index} className="flex justify-between">
-                            <span className="truncate max-w-md">{file.name}</span>
-                            <span className={file.error ? "text-red-600 font-medium" : "text-green-600 font-medium"}>
-                              {file.error ? "Error" : file.status}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
+  <div className="mt-6 bg-blue-50 rounded-md p-4 border border-blue-100">
+    <div className="flex justify-between items-center mb-2">
+      <h4 className="text-sm font-medium text-blue-800">
+        {processingStatus === 'processing' && 'Starting Processing...'}
+        {processingStatus === 'in-progress' && 'Processing Documents'}
+        {processingStatus === 'completed' && 'Processing Complete'}
+        {processingStatus === 'initializing' && 'Initializing Upload'}
+        {processingStatus === 'uploaded' && 'Upload Complete - Processing Started'}
+        {processingStatus === 'error' && 'Processing Failed'}
+      </h4>
+      <span className="text-sm font-medium text-blue-800">
+        {Math.round(uploadProgress)}%
+      </span>
+    </div>
+    
+    {/* Progress Bar */}
+    <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
+      <div 
+        className={`h-3 rounded-full transition-all duration-500 ease-out ${
+          processingStatus === 'error' ? 'bg-red-500' : 
+          processingStatus === 'completed' ? 'bg-green-500' : 'bg-blue-600'
+        }`}
+        style={{ width: `${uploadProgress}%` }}
+      ></div>
+    </div>
+    
+    {/* Current Status */}
+    <div className="text-xs text-blue-700 mb-3">
+      {currentDocName && (
+        <div className="flex items-center">
+          {processingStatus === 'in-progress' && (
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
+          )}
+          <span>{currentDocName}</span>
+        </div>
+      )}
+    </div>
+    
+    {/* Processing Statistics */}
+    {(processingStatus === 'in-progress' || processingStatus === 'completed') && processedFiles.length > 0 && (
+      <div className="mt-3 p-3 bg-white rounded border border-blue-200">
+        <h5 className="text-xs font-medium text-blue-800 mb-2">
+          Processing Status: {processedFiles.length} / {files.length} files
+        </h5>
+        <div className="max-h-32 overflow-y-auto">
+          <ul className="text-xs space-y-1">
+            {processedFiles.map((file, index) => (
+              <li key={index} className="flex justify-between items-center py-1">
+                <span className="truncate max-w-xs" title={file.name}>
+                  {file.name}
+                </span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  file.error ? 
+                    "bg-red-100 text-red-700" : 
+                    file.status === 'completed' ? 
+                      "bg-green-100 text-green-700" : 
+                      "bg-yellow-100 text-yellow-700"
+                }`}>
+                  {file.error ? "Error" : file.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )}
+    
+    {/* Show remaining files to be processed */}
+    {processingStatus === 'in-progress' && processedFiles.length < files.length && (
+      <div className="mt-2 text-xs text-blue-600">
+        Remaining: {files.length - processedFiles.length} files
+      </div>
+    )}
+  </div>
+)}
               
               {/* Success Message */}
               {uploadStatus === 'success' && (
@@ -508,9 +619,9 @@ const LCSupportingDocsUploader = () => {
                       <h3 className="text-sm font-medium text-green-800">Upload Complete</h3>
                       <div className="mt-2 text-sm text-green-700">
                         <p>Your documents have been processed successfully.</p>
-                        {sessionId && (
+                        {/* {sessionId && (
                           <p className="mt-1 font-mono text-xs">Session ID: {sessionId}</p>
-                        )}
+                        )} */}
                       </div>
                       
                       {/* Successfully Processed Files */}
@@ -519,12 +630,15 @@ const LCSupportingDocsUploader = () => {
                           <h4 className="text-sm font-medium text-green-800">Processed Files:</h4>
                           <ul className="mt-1 list-disc list-inside text-sm text-green-700">
                             {processedFiles.filter(file => !file.error).map((file, index) => (
-                              <li key={index}>
-                                {file.name}
-                                {file.url && (
-                                  <span className="ml-2">
-                                    (<a href={file.url} target="_blank" rel="noopener noreferrer" className="underline">View</a>)
-                                  </span>
+                              <li key={index} className="flex items-center justify-between py-1">
+                                <span>{file.name}</span>
+                                {file.path && (
+                                  <button
+                                    onClick={() => window.open(`https://192.168.18.152:50013/supporting_docs/view/${file.path}`, '_blank')}
+                                    className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                  >
+                                    View Document
+                                  </button>
                                 )}
                               </li>
                             ))}
@@ -553,10 +667,16 @@ const LCSupportingDocsUploader = () => {
                 <button
                   type="button"
                   onClick={handleUpload}
-                  disabled={uploading || files.length === 0}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-300"
+                  disabled={uploading || files.length === 0 || uploadStatus === 'success'}
+                  className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    uploadStatus === 'success' 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : uploading || files.length === 0 
+                        ? 'bg-blue-300' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  {uploading ? 'Processing...' : 'Upload Documents'}
+                  {uploading ? 'Processing...' : uploadStatus === 'success' ? 'Upload Complete' : 'Upload Documents'}
                 </button>
               </div>
             </div>
@@ -650,7 +770,7 @@ export default LCSupportingDocsUploader;
 //       }
       
 //       // Make API call to validate LC number
-//       const response = await fetch(`https://192.168.18.62:50013/lc/validate_lc/${lcNumber}`, {
+//       const response = await fetch(`https://192.168.18.152:50013/lc/validate_lc/${lcNumber}`, {
 //         method: 'GET',
 //         headers: {
 //           'accept': 'application/json',
@@ -819,7 +939,7 @@ export default LCSupportingDocsUploader;
 //       }
       
 //       // Create a WebSocket URL with authentication token as a query parameter
-//       const wsUrl = `wss://192.168.18.62:50013/supporting_docs/ws/progress/${id}?token=${encodeURIComponent(token)}`;
+//       const wsUrl = `wss://192.168.18.152:50013/supporting_docs/ws/progress/${id}?token=${encodeURIComponent(token)}`;
 //       const socket = new WebSocket(wsUrl);
       
 //       // Store the socket in the ref
@@ -917,7 +1037,7 @@ export default LCSupportingDocsUploader;
 //       });
 
 //       // Make the API request to upload the files with token in authorization header
-//       const response = await fetch(`https://192.168.18.62:50013/supporting_docs/upload_docs/?lc_no=${lcNumber}`, {
+//       const response = await fetch(`https://192.168.18.152:50013/supporting_docs/upload_docs/?lc_no=${lcNumber}`, {
 //         method: 'POST',
 //         headers: {
 //           'accept': 'application/json',
@@ -2790,7 +2910,7 @@ export default LCSupportingDocsUploader;
 //       }
       
 //       // Make API call to validate LC number
-//       const response = await fetch(`https://192.168.18.62:50013/lc/validate_lc/${lcNumber}`, {
+//       const response = await fetch(`https://192.168.18.152:50013/lc/validate_lc/${lcNumber}`, {
 //         method: 'GET',
 //         headers: {
 //           'accept': 'application/json',
@@ -2951,7 +3071,7 @@ export default LCSupportingDocsUploader;
       
 //       // Create a WebSocket URL with authentication token as a query parameter
 //       // This is more reliable than using protocols
-//       const wsUrl = `wss://192.168.18.62:50013/supporting_docs/ws/progress/${id}?token=${encodeURIComponent(token)}`;
+//       const wsUrl = `wss://192.168.18.152:50013/supporting_docs/ws/progress/${id}`;
 //       const socket = new WebSocket(wsUrl);
       
 //       // Store the socket in the ref
@@ -3049,7 +3169,7 @@ export default LCSupportingDocsUploader;
 //       });
 
 //       // Make the API request to upload the files with token in authorization header
-//       const response = await fetch(`https://192.168.18.62:50013/supporting_docs/upload_docs/?lc_no=${lcNumber}`, {
+//       const response = await fetch(`https://192.168.18.152:50013/supporting_docs/upload_docs/?lc_no=${lcNumber}`, {
 //         method: 'POST',
 //         headers: {
 //           'accept': 'application/json',

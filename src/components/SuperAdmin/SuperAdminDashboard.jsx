@@ -23,14 +23,20 @@ const SuperAdminAudits = () => {
           // Verify data structure
           console.log('Received audit requests data:', data);
           
-          // Check if data is an array
-          if (!Array.isArray(data)) {
+          // Handle different data scenarios more gracefully
+          if (data === null || data === undefined) {
+            // API returned no data, treat as empty array
+            console.log('API returned null/undefined, treating as empty array');
+            setAuditRequests([]);
+          } else if (Array.isArray(data)) {
+            // Valid array response
+            setAuditRequests(data);
+          } else {
+            // Unexpected data format - this is a real error
             console.error('Received data is not an array:', data);
-            setError('Invalid data format received from server. Expected an array.');
-            return;
+            throw new Error('Invalid data format received from server. Expected an array.');
           }
           
-          setAuditRequests(data);
         } catch (err) {
           console.error('Failed to fetch audit requests:', err);
           
@@ -91,90 +97,113 @@ const SuperAdminAudits = () => {
     };
 
     const columns = [
-      {
-        key: 'id',
-        header: 'Request ID',
-        render: (row) => {
-          console.log(`Row ID being displayed: ${row.id}`);
-          return <span className="font-medium text-gray-700">#{row.id}</span>
-        }
-      },
+      // {
+      //   key: 'id',
+      //   header: 'Request ID',
+      //   render: (row) => {
+      //     console.log(`Row ID being displayed: ${row.id}`);
+      //     return <div className="font-medium text-gray-900">#{row.id}</div>
+      //   }
+      // },
       {
         key: 'requested_by_name',
         header: 'Requested By',
-        render: (row) => <span>{row.requested_by_name || row.requested_by_id}</span>
+        render: (row) => (
+          <div className="flex items-center">
+            <img
+              src={`https://ui-avatars.com/api/?name=${(row.requested_by_name || 'User').replace(' ', '+')}`}
+              alt={row.requested_by_name || 'User'}
+              className="h-6 w-6 rounded-full mr-2"
+            />
+            <span className="text-sm text-gray-800">{row.requested_by_name || row.requested_by_id}</span>
+          </div>
+        )
       },
       {
         key: 'request_for_name',
         header: 'Request For',
-        render: (row) => <span>{row.request_for_name || row.request_for_id}</span>
+        render: (row) => (
+          <div className="flex items-center">
+            <img
+              src={`https://ui-avatars.com/api/?name=${(row.request_for_name || 'User').replace(' ', '+')}`}
+              alt={row.request_for_name || 'User'}
+              className="h-6 w-6 rounded-full mr-2"
+            />
+            <span className="text-sm text-gray-800">{row.request_for_name || row.request_for_id}</span>
+          </div>
+        )
       },
       {
         key: 'request_for_role',
         header: 'Role',
-        render: (row) => <span className="capitalize">{row.request_for_role}</span>
+        render: (row) => (
+          <div className="text-sm text-gray-500 capitalize">{row.request_for_role}</div>
+        )
       },
       {
         key: 'created_at',
         header: 'Request Date',
         render: (row) => (
-          <span className="text-gray-600">
+          <div className="text-sm text-gray-500">
             {format(new Date(row.created_at), 'MMM dd, yyyy HH:mm')}
-          </span>
+          </div>
         )
       },
       {
         key: 'status',
         header: 'Status',
         render: (row) => (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            row.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-            row.status === 'approved' ? 'bg-green-100 text-green-800' :
-            'bg-red-100 text-red-800'
-          }`}>
-            {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
-          </span>
+          <div className="text-sm">
+            <span className={`px-2 py-1 text-xs rounded-full ${
+              row.status === 'approved' ? 'bg-green-100 text-green-800' :
+              row.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {row.status.charAt(0).toUpperCase() + row.status.slice(1)}
+            </span>
+          </div>
         )
       }
     ];
   
-    const actionColumn = (row, onRowAction) => {
-      console.log('Action column row object:', row);
-      
-      return (
-        <div className="flex space-x-2">
-          {row.status === 'pending' && (
-            <>
-              <button
-                onClick={() => {
-                  console.log(`Approving audit request for ${row.requested_by_name}`);
-                  onRowAction('approve', row);
-                }}
-                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                <CheckCircleIcon className="h-4 w-4 mr-1" />
-                Approve
-              </button>
-              <button
-                onClick={() => {
-                  console.log(`Rejecting audit request for ${row.requested_by_name}`);
-                  onRowAction('reject', row);
-                }}
-                className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <XCircleIcon className="h-4 w-4 mr-1" />
-                Reject
-              </button>
-            </>
-          )}
-          {row.status !== 'pending' && (
-            <span className="text-sm text-gray-500 italic">
-              {row.status === 'approved' ? 'Approved' : 'Rejected'}
-            </span>
-          )}
-        </div>
-      );
-    };
+  
+const actionColumn = (row, onRowAction) => {
+  console.log('Action column row object:', row);
+  
+  return (
+    <div className="flex space-x-2">
+      {row.status === 'pending' && (
+        <>
+          <button
+            onClick={() => {
+              console.log(`Approving audit request for ${row.requested_by_name}`);
+              onRowAction('approve', row);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-150"
+          >
+            <CheckCircleIcon className="h-3 w-3 mr-1" />
+            Approve
+          </button>
+          <button
+            onClick={() => {
+              console.log(`Rejecting audit request for ${row.requested_by_name}`);
+              onRowAction('reject', row);
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-150"
+          >
+            <XCircleIcon className="h-3 w-3 mr-1" />
+            Reject
+          </button>
+        </>
+      )}
+      {row.status !== 'pending' && (
+        <span className="text-sm text-gray-500 italic">
+          {row.status === 'approved' ? 'Approved' : 'Rejected'}
+        </span>
+      )}
+    </div>
+  );
+};
   
     const handleRowAction = (action, row) => {
       console.log(`handleRowAction called with action: ${action}`, row);
@@ -252,8 +281,14 @@ const SuperAdminAudits = () => {
                     </div>
                   </div>
                 ) : auditRequests.length === 0 ? (
-                  <div className="px-4 py-6 sm:px-6 text-center text-gray-500">
-                    No audit requests found.
+                  <div className="px-4 py-10 sm:px-6 text-center">
+                    <div className="flex flex-col items-center">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">No data available</h3>
+                      <p className="mt-1 text-sm text-gray-500">There are currently no audit requests to display.</p>
+                    </div>
                   </div>
                 ) : (
                   <DataTable

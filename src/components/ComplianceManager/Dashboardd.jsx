@@ -340,6 +340,7 @@ import React, { useState, useEffect } from 'react';
 import { lcService } from '../authentication/apiManagerCompliance';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 
+
 import { 
   ChevronRightIcon,
   DocumentIcon,
@@ -435,7 +436,7 @@ const ManagerDashboard = () => {
     // Navigate to LC details page
     console.log('Viewing LC:', lcNo);
     // Add navigation logic here
-    window.open(`/discrepency/${lcNo}`, '_blank');
+    window.open(`/discrepencies/${lcNo}`, '_blank');
   };
 
   const formatDate = (dateString) => {

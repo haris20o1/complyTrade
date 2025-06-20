@@ -287,10 +287,14 @@ import RequestAuditPage from "./components/IT_Manager/ITaudit";
 import SuperAdminAudits from "./components/SuperAdmin/SuperAdminDashboard";
 import UserPerformanceDashboard from "./components/SuperAdmin/UserPerformance";
 import { AuthProvider } from "./context/AuthContext";
+import VesselTrackingPage from "./components/vesselTracking/vesselTrack";
+import VesselTrackingPage2 from "./components/vesselTracking/vesselTrack2";
+import { WebSocketProvider } from "./context/WebSocketContext";
 
 function App() {
   return (
     <AuthProvider>
+      <WebSocketProvider>
       <Router>
         <Routes>
           {/* Public routes that redirect logged-in users */}
@@ -308,14 +312,21 @@ function App() {
               <Route path="/assigned" element={<AssignedLCPage />} />
               <Route path="/completed" element={<CompletedLCPage />} />
               <Route path="/timeline" element={<LCTimelinePage />} />
-              <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
+              {/* <Route path="/discrepencies/:lcNumber" element={<LCDetails />} /> */}
+              <Route path="/vesseltracking" element={<VesselTrackingPage />} />
             </Route>
             
+
+            <Route element={<RoleBasedRoute allowedRoles={['admin', 'complyce_manager']} />}>
+            
+              <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
+           
+            </Route>
             {/* Compliance Manager routes */}
             <Route element={<RoleBasedRoute allowedRoles={['complyce_manager']} />}>
               <Route path="/dashboardd" element={<ManagerDashboard />} />
               <Route path="/complete" element={<CompletedLCs />} />
-              <Route path="/discrepency/:lcNumber" element={<Discrepancy />} />
+              <Route path="/vessel-tracking" element={<VesselTrackingPage2 />} />
             </Route>
             
             {/* SWIFT User routes */}
@@ -354,6 +365,7 @@ function App() {
           <Route path="*" element={<h1>Page not found </h1>} />
         </Routes>
       </Router>
+      </WebSocketProvider>
     </AuthProvider>
   );
 }

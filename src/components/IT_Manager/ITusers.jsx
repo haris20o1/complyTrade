@@ -584,7 +584,7 @@ const UserManagement = () => {
     { id: 'it_admin', name: 'IT Admin' },
     { id: 'complyce_manager', name: 'Compliance Manager' },
     { id: 'swift', name: 'SWIFT Operator' },
-    { id: 'support', name: 'Support Staff' },
+    { id: 'support', name: 'Support Uploader' },
     { id: 'super_admin', name: 'Super Admin' }
   ];
 

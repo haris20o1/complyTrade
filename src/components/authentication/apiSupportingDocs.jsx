@@ -40,5 +40,5 @@ export const getWebSocketUrl = (sessionId) => {
     throw new Error('Authentication token not found');
   }
   
-  return `wss://192.168.18.62:50013/supporting_docs/ws/progress/${sessionId}?token=${encodeURIComponent(token)}`;
+  return `wss://192.168.18.152:50013/supporting_docs/ws/progress/${sessionId}`;
 };

@@ -194,7 +194,7 @@ export const AuthProvider = ({ children }) => {
 
   // Export auth context value
   const value = {
-    isAuthenticated,
+    isAuthenticated,    
     userRole,
     isLoading,
     authChecked,
@@ -226,3 +226,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+

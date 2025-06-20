@@ -189,11 +189,11 @@ const Sidebar = () => {
   // Use the auth context
   const { userRole, isAuthenticated, isLoading, authChecked } = useAuth();
   
-  console.log('=== SIDEBAR RENDER ===');
-  console.log('userRole:', userRole);
-  console.log('isAuthenticated:', isAuthenticated);
-  console.log('isLoading:', isLoading);
-  console.log('authChecked:', authChecked);
+  // console.log('=== SIDEBAR RENDER ===');
+  // console.log('userRole:', userRole);
+  // console.log('isAuthenticated:', isAuthenticated);
+  // console.log('isLoading:', isLoading);
+  // console.log('authChecked:', authChecked);
   
   // Define all navigation items
   const allNavItems = [
@@ -265,7 +265,7 @@ const Sidebar = () => {
     },
     { 
       name: 'Settings', 
-      path: '/settings', 
+      // path: '/settings', 
       icon: Cog6ToothIcon,
       roles: ['admin','it_admin','complyce_manager','super_admin']
     },
@@ -277,13 +277,13 @@ const Sidebar = () => {
   if (isAuthenticated && userRole && typeof userRole === 'string') {
     navItems = allNavItems.filter(item => {
       const hasRole = item.roles.includes(userRole);
-      console.log(`Item: ${item.name} - Role check for '${userRole}':`, hasRole);
+      // console.log(`Item: ${item.name} - Role check for '${userRole}':`, hasRole);
       return hasRole;
     });
   }
   
-  console.log('Final navItems count:', navItems.length);
-  console.log('=== END SIDEBAR RENDER ===');
+  // console.log('Final navItems count:', navItems.length);
+  // console.log('=== END SIDEBAR RENDER ===');
 
   // KEY FIX: Only hide sidebar if we're sure the user is not authenticated
   // Don't hide during the initial loading phase
