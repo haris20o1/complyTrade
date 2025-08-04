@@ -3685,7 +3685,7 @@ import LCDiscrepanciesView from "./LCDiscrepanciesView";
 import SuccessModal from "./SuccessModal";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorState from "./ErrorState";
-import SignatureVerificationView from "./SignatureVerificationView";  
+import SignatureVerificationView from "./SignatureVerificationView";
 import { useAuth } from "../../context/AuthContext";
 
 const LCDetails = () => {
@@ -3710,10 +3710,10 @@ const LCDetails = () => {
   const [pendingDeletions, setPendingDeletions] = useState({});
   const [signatureData, setSignatureData] = useState([]);
   const [showSignatureVerification, setShowSignatureVerification] = useState(false);
-const [currentDocumentSignatures, setCurrentDocumentSignatures] = useState([]);
-const [originalMainPoints, setOriginalMainPoints] = useState([]);
-const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth();
-// const [userRole, setUserRole] = useState('');
+  const [currentDocumentSignatures, setCurrentDocumentSignatures] = useState([]);
+  const [originalMainPoints, setOriginalMainPoints] = useState([]);
+  const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth();
+  // const [userRole, setUserRole] = useState('');
 
 
   const [priceVerificationData, setPriceVerificationData] = useState([
@@ -3754,21 +3754,21 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
     const fetchData = async () => {
       try {
         setLoading(true);
-  
+
         const data = await lcService.getLCSupportDocsDiscrepancies(lcNumber);
-  
+
         if (!data || data.length === 0) {
           setHasSupportingDocs(false);
           setError('No supporting documents available for this LC');
           return;
         }
-  
+
         const initialVisitedTabs = {};
         data.forEach((_, index) => {
           initialVisitedTabs[index] = false;
         });
         setVisitedTabs(initialVisitedTabs);
-  
+
         const initializedPoints = data.map(doc => ({
           doc_uuid: doc.doc_uuid,
           text: doc.doc_title || 'Untitled Document',
@@ -3787,16 +3787,16 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
             remarks: d.remarks || ""
           })) || []
         }));
-  
+
         setMainPoints(initializedPoints);
         // Store original data for comparison
         setOriginalMainPoints(JSON.parse(JSON.stringify(initializedPoints)));
-  
+
         const savedStatus = localStorage.getItem(`lc-${lcNumber}-completed`);
         if (savedStatus) {
           setLcCompleted(savedStatus === 'true');
         }
-  
+
       } catch (err) {
         console.error("Error fetching data:", err);
         setHasSupportingDocs(false);
@@ -3805,7 +3805,7 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [lcNumber]);
 
@@ -3825,13 +3825,13 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
       console.log('=== INITIALIZING USER ROLE ===');
       console.log('Context user role:', contextUserRole);
       console.log('Is authenticated:', isAuthenticated);
-      
+
       // If we don't have a role from context, try to refresh auth status
       if (!contextUserRole && isAuthenticated) {
         console.log('No role in context, checking auth status...');
         await checkAuthStatus();
       }
-      
+
       // Use context role or fallback
       const finalRole = contextUserRole || localStorage.getItem('userRole') || 'admin';
       console.log('Final role being used:', finalRole);
@@ -3933,26 +3933,26 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
       const result = {
         doc_uuid: mainPoint.doc_uuid
       };
-  
+
       // Handle existing subpoints that have been modified
       const existingSubPoints = mainPoint.subPoints.filter(sp => sp.id > 0);
       if (existingSubPoints.length > 0 && originalMainPoint) {
         const updatedPoints = [];
-        
+
         existingSubPoints.forEach(sp => {
           const originalSubPoint = originalMainPoint.subPoints.find(orig => orig.id === sp.id);
-          
+
           if (originalSubPoint) {
             const hasStatusChanged = sp.status !== originalSubPoint.status;
             const hasRemarksChanged = (sp.remarks || '') !== (originalSubPoint.remarks || '');
-            
+
             // Only include if there are actual changes
             if (hasStatusChanged || hasRemarksChanged) {
               const update = {
                 id: sp.id,
                 status: sp.status
               };
-  
+
               // Only include remarks if they have changed and meet length requirement
               if (hasRemarksChanged) {
                 if (sp.remarks && sp.remarks.length >= 3) {
@@ -3961,39 +3961,39 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
                   update.remarks = "";
                 }
               }
-  
+
               updatedPoints.push(update);
             }
           }
         });
-  
+
         if (updatedPoints.length > 0) {
           result.updates = updatedPoints;
         }
       }
-  
+
       // Handle new subpoints (negative IDs)
       const newSubPoints = mainPoint.subPoints
         .filter(sp => sp.id < 0)
         .map(sp => sp.text)
         .filter(text => text && text.trim() !== ''); // Only include non-empty texts
-      
+
       if (newSubPoints.length > 0) {
         result.addition = newSubPoints;
       }
-  
+
       // Handle deletions
       if (pendingDeletions[mainPoint.doc_uuid] && pendingDeletions[mainPoint.doc_uuid].length > 0) {
         result.deletion = pendingDeletions[mainPoint.doc_uuid];
       }
-  
+
       return result;
     }).filter(item => {
       // Only include documents that have actual changes
       const hasUpdates = item.updates && item.updates.length > 0;
       const hasAdditions = item.addition && item.addition.length > 0;
       const hasDeletions = item.deletion && item.deletion.length > 0;
-      
+
       return hasUpdates || hasAdditions || hasDeletions;
     });
   };
@@ -4001,20 +4001,20 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
   const handleSaveDraft = async () => {
     try {
       const discrepanciesData = prepareDiscrepanciesData();
-      
+
       if (discrepanciesData.length === 0) {
         alert("No changes to save!");
         return;
       }
-  
+
       console.log("Sending only changed data:", JSON.stringify(discrepanciesData, null, 2));
       await lcService.updateLCDiscrepancies(false, discrepanciesData);
-      
+
       // Update original data after successful save
       setOriginalMainPoints(JSON.parse(JSON.stringify(mainPoints)));
       // Clear pending deletions after successful save
       setPendingDeletions({});
-      
+
       alert("Draft saved successfully!");
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -4022,11 +4022,10 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
       alert("Failed to save draft: " + (error.response?.data?.message || error.message));
     }
   };
-  
-  // Updated handleGenerateReport function
-  const handleGenerateReport = async () => {
+
+  const handleSubmit = async () => {
     if (!allTabsVisited) {
-      alert("Please review all documents before generating the final report.");
+      alert("Please review all documents before submitting.");
       return;
     }
   
@@ -4038,74 +4037,190 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
       );
   
       if (!allIssuesReviewed) {
-        alert("All issues must be classified as Clean, Discrepant, or Reassign before generating the final report.");
+        alert("All issues must be classified as Clean, Discrepant, or Reassign before submitting.");
         return;
       }
   
-      // For final report, we need to send all current state, not just changes
-      const allDiscrepanciesData = mainPoints.map(mainPoint => {
-        const result = {
-          doc_uuid: mainPoint.doc_uuid,
-          updates: mainPoint.subPoints.filter(sp => sp.id > 0).map(sp => {
-            const update = {
-              id: sp.id,
-              status: sp.status
-            };
+      // Show loading state
+      setLoading(true);
   
-            if (sp.remarks && sp.remarks.length >= 3) {
-              update.remarks = sp.remarks;
-            }
+      // Use the same prepareDiscrepanciesData function as handleSaveDraft
+      let discrepanciesData = prepareDiscrepanciesData();
   
-            return update;
-          })
-        };
+      // If no changes, send at least the first document's UUID to indicate which LC is being submitted
+      if (discrepanciesData.length === 0 && mainPoints.length > 0) {
+        discrepanciesData = [{
+          doc_uuid: mainPoints[0].doc_uuid
+          // No updates/additions/deletions - just the doc_uuid for identification
+        }];
+      }
   
-        const newSubPoints = mainPoint.subPoints
-          .filter(sp => sp.id < 0)
-          .map(sp => sp.text)
-          .filter(text => text && text.trim() !== '');
-        
-        if (newSubPoints.length > 0) {
-          result.addition = newSubPoints;
-        }
-  
-        if (pendingDeletions[mainPoint.doc_uuid] && pendingDeletions[mainPoint.doc_uuid].length > 0) {
-          result.deletion = pendingDeletions[mainPoint.doc_uuid];
-        }
-  
-        return result;
-      });
-  
-      console.log("Sending data for final report:", JSON.stringify(allDiscrepanciesData, null, 2));
-      await lcService.updateLCDiscrepancies(true, allDiscrepanciesData);
+      console.log("Sending data for submission:", JSON.stringify(discrepanciesData, null, 2));
+      
+      // Always call the API for submission
+      await lcService.updateLCDiscrepancies(true, discrepanciesData);
+      
+      // Update original data after successful save
+      setOriginalMainPoints(JSON.parse(JSON.stringify(mainPoints)));
+      // Clear pending deletions after successful save
+      setPendingDeletions({});
   
       setLcCompleted(true);
       localStorage.setItem(`lc-${lcNumber}-completed`, 'true');
   
-      setSuccessMessage("Final report generated successfully!");
+      setSuccessMessage("Submission completed successfully!");
       setShowSuccess(true);
   
       setTimeout(() => {
-        if (currentUserRole === 'admin') {
-          console.log('Navigating admin to /completed');
-          navigate('/completed');
-        } else if (currentUserRole === 'complyce_manager') {
-          console.log('Navigating compliance manager to /complete');
-          navigate('/complete');
-        } else {
-          // Fallback navigation for unknown roles
-          console.log('Unknown role, defaulting to /complete');
-          navigate('/complete');
-        }
+        console.log('Navigating compliance manager to /complete');
+        navigate('/complete');
       }, 2000);
     } catch (error) {
-      console.error("Error generating report:", error);
-      alert("Failed to generate report: " + (error.response?.data?.message || error.message));
+      console.error("Error submitting:", error);
+      alert("Failed to submit: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
     }
   };
+// Add this new function for compliance managers (rename the commented one)
+// const handleSubmit = async () => {
+//   if (!allTabsVisited) {
+//     alert("Please review all documents before submitting.");
+//     return;
+//   }
 
+//   try {
+//     const allIssuesReviewed = mainPoints.every(mainPoint =>
+//       mainPoint.subPoints.every(sp =>
+//         sp.status === 'clean' || sp.status === 'discripant' || sp.status === 'review'
+//       )
+//     );
+
+//     if (!allIssuesReviewed) {
+//       alert("All issues must be classified as Clean, Discrepant, or Reassign before submitting.");
+//       return;
+//     }
+
+//     // Show loading state
+//     setLoading(true);
+
+//     // Use the same prepareDiscrepanciesData function as handleSaveDraft
+//     const discrepanciesData = prepareDiscrepanciesData();
+
+//     console.log("Sending only changed data for submission:", JSON.stringify(discrepanciesData, null, 2));
+    
+//     // Update the discrepancies with only changed data, but with true flag for submission
+//     // if (discrepanciesData.length > 0) {
+//     await lcService.updateLCDiscrepancies(true, discrepanciesData);
+    
+//     // Update original data after successful save
+//     setOriginalMainPoints(JSON.parse(JSON.stringify(mainPoints)));
+//     // Clear pending deletions after successful save
+//     setPendingDeletions({});
+//   // }
+
+//     setLcCompleted(true);
+//     localStorage.setItem(`lc-${lcNumber}-completed`, 'true');
+
+//     setSuccessMessage("Submission completed successfully!");
+//     setShowSuccess(true);
+
+//     setTimeout(() => {
+//       console.log('Navigating compliance manager to /complete');
+//       navigate('/complete');
+//     }, 2000);
+//   } catch (error) {
+//     console.error("Error submitting:", error);
+//     alert("Failed to submit: " + (error.response?.data?.message || error.message));
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+// Modified handleGenerateReport function (keep existing one for admins)
+const handleGenerateReport = async () => {
+  if (!allTabsVisited) {
+    alert("Please review all documents before generating the final report.");
+    return;
+  }
+
+  try {
+    const allIssuesReviewed = mainPoints.every(mainPoint =>
+      mainPoint.subPoints.every(sp =>
+        sp.status === 'clean' || sp.status === 'discripant' || sp.status === 'review'
+      )
+    );
+
+    if (!allIssuesReviewed) {
+      alert("All issues must be classified as Clean, Discrepant, or Reassign before generating the final report.");
+      return;
+    }
+
+    // Show loading state
+    setLoading(true);
+
+    // Use the same prepareDiscrepanciesData function as handleSaveDraft
+    const discrepanciesData = prepareDiscrepanciesData();
+
+    console.log("Sending only changed data for final report:", JSON.stringify(discrepanciesData, null, 2));
+    
+    // First update the discrepancies with only changed data, but with true flag for final report
+    if (discrepanciesData.length > 0) {
+      await lcService.updateLCDiscrepancies(true, discrepanciesData);
+      
+      // Update original data after successful save
+      setOriginalMainPoints(JSON.parse(JSON.stringify(mainPoints)));
+      // Clear pending deletions after successful save
+      setPendingDeletions({});
+    }
+
+    // Then generate the report
+    const reportResponse = await lcService.generateLCReport(lcNumber);
+    
+    setLcCompleted(true);
+    localStorage.setItem(`lc-${lcNumber}-completed`, 'true');
+
+    // Open the PDF report in a new tab
+    if (reportResponse.url || reportResponse) {
+      // Handle both {url: "..."} and direct URL string responses
+      const reportUrl = reportResponse.url || reportResponse;
+      window.open(reportUrl, '_blank');
+    }
+
+    setSuccessMessage("Final report generated successfully!");
+    setShowSuccess(true);
+
+    setTimeout(() => {
+      console.log('Navigating admin to /completed');
+      navigate('/completed');
+    }, 2000);
+  } catch (error) {
+    console.error("Error generating report:", error);
+    alert("Failed to generate report: " + (error.response?.data?.message || error.message));
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Function to determine which handler to use based on role
+const getActionHandler = () => {
+  const currentUserRole = contextUserRole || 'complyce_manager';
+  return currentUserRole === 'admin' ? handleGenerateReport : handleSubmit;
+};
   const handleBackToDashboard = () => {
     window.close();
+  };
+
+
+  const handleDocumentClick = async (docUuid) => {
+    try {
+      const response = await lcService.downloadSupportingDocument(docUuid);
+      // Use file_url from the response instead of url
+      window.open(response.file_url, '_blank');
+    } catch (error) {
+      console.error('Error opening document:', error);
+      alert('Failed to open document: ' + (error.response?.data?.message || error.message));
+    }
   };
 
   const handleSignatureValidityUpdate = (mainIndex, signatureId, isValid) => {
@@ -4113,7 +4228,7 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
     const signatureIndex = updatedMainPoints[mainIndex].signatures.findIndex(
       sig => sig.id === signatureId
     );
-  
+
     if (signatureIndex !== -1) {
       updatedMainPoints[mainIndex].signatures[signatureIndex].status = isValid ? 'valid' : 'invalid';
       setMainPoints(updatedMainPoints);
@@ -4141,75 +4256,75 @@ const { userRole: contextUserRole, isAuthenticated, checkAuthStatus } = useAuth(
 
   // Main render
   return (
-  <div className="min-h-screen bg-gray-50">
-    <Header
-      lcNumber={lcNumber}
-      lcCompleted={lcCompleted}
-      allTabsVisited={allTabsVisited}
-      navigate={navigate}
-      onBackToDashboard={handleBackToDashboard}
-      onGenerateReport={handleGenerateReport}
-      userRole={contextUserRole || 'complyce_manager'} // Use context role with fallback
-    />
-
-    <div className="flex w-full">
-      <Sidebar
-        mainPoints={mainPoints}
-        currentView={currentView}
-        activeTab={activeTab}
-        visitedTabs={visitedTabs}
-        priceVerificationData={priceVerificationData}
-        signatureData={signatureData}
-        isStatusCheckboxEnabled={isStatusCheckboxEnabled}
-        missingDocumentStatus={missingDocumentStatus}
-        remainingCount={remainingCount}
-        onViewChange={setCurrentView}
-        onTabChange={setActiveTab}
-        navigate={navigate}
-      />
-
-      <div className={`flex-1 p-6 ml-64 ${showSignatureVerification ? 'pr-80' : ''} transition-all duration-300`}>
-        {currentView === 'price-verification' ? (
-          <PriceVerificationView
-            lcNumber={lcNumber}
-            priceVerificationData={priceVerificationData}
-          />
-        ) : currentView === 'signature-verification' ? (
-          <SignatureVerificationView
-            lcNumber={lcNumber}
-            signatureData={signatureData}
-          />
-        ) : (
-          
-<LCDiscrepanciesView
-  mainPoints={mainPoints}
-  activeTab={activeTab}
-  newSubPoint={newSubPoint}
-  selectedSubPoint={selectedSubPoint}
-  showSignatureVerification={showSignatureVerification}
-  onRemarksChange={handleRemarksChange}
-  onSelection={handleSelection}
-  onAddSubPoint={addSubPoint}
-  onDeleteSubPoint={deleteSubPoint}
-  onNewSubPointChange={setNewSubPoint}
-  onSubPointSelect={setSelectedSubPoint}
-  onSaveDraft={handleSaveDraft}
-  onSignatureValidityUpdate={handleSignatureValidityUpdate} // Add this line
+    <div className="min-h-screen bg-gray-50">
+   <Header
+  lcNumber={lcNumber}
+  lcCompleted={lcCompleted}
+  allTabsVisited={allTabsVisited}
+  navigate={navigate}
+  onBackToDashboard={handleBackToDashboard}
+  onAction={getActionHandler()} // Changed from onGenerateReport to onAction
+  userRole={contextUserRole || 'complyce_manager'}
 />
-        )}
+      <div className="flex w-full">
+        <Sidebar
+          mainPoints={mainPoints}
+          currentView={currentView}
+          activeTab={activeTab}
+          visitedTabs={visitedTabs}
+          priceVerificationData={priceVerificationData}
+          signatureData={signatureData}
+          isStatusCheckboxEnabled={isStatusCheckboxEnabled}
+          missingDocumentStatus={missingDocumentStatus}
+          remainingCount={remainingCount}
+          onViewChange={setCurrentView}
+          onTabChange={setActiveTab}
+          navigate={navigate}
+        />
+
+        <div className={`flex-1 p-6 ml-64 ${showSignatureVerification ? 'pr-80' : ''} transition-all duration-300`}>
+          {currentView === 'price-verification' ? (
+            <PriceVerificationView
+              lcNumber={lcNumber}
+              priceVerificationData={priceVerificationData}
+            />
+          ) : currentView === 'signature-verification' ? (
+            <SignatureVerificationView
+              lcNumber={lcNumber}
+              signatureData={signatureData}
+            />
+          ) : (
+
+            <LCDiscrepanciesView
+              mainPoints={mainPoints}
+              activeTab={activeTab}
+              newSubPoint={newSubPoint}
+              selectedSubPoint={selectedSubPoint}
+              showSignatureVerification={showSignatureVerification}
+              onRemarksChange={handleRemarksChange}
+              onSelection={handleSelection}
+              onAddSubPoint={addSubPoint}
+              onDeleteSubPoint={deleteSubPoint}
+              onNewSubPointChange={setNewSubPoint}
+              onSubPointSelect={setSelectedSubPoint}
+              onSaveDraft={handleSaveDraft}
+              onSignatureValidityUpdate={handleSignatureValidityUpdate}
+              onDocumentClick={handleDocumentClick} // Add this line
+            />
+          )}
+        </div>
+
+
       </div>
 
-     
+      {showSuccess && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setShowSuccess(false)}
+        />
+      )}
     </div>
-
-    {showSuccess && (
-      <SuccessModal
-        message={successMessage}
-        onClose={() => setShowSuccess(false)}
-      />
-    )}
-  </div>
-);
+  );
 };
 
 export default LCDetails;

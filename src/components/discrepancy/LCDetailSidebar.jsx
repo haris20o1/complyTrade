@@ -311,7 +311,7 @@ const Sidebar = ({
               <span className="flex items-center justify-center h-6 w-12 rounded-full bg-yellow-500 text-white mr-2 text-[11px] font-bold">
                 RA
               </span>
-              <span className="text-xs text-yellow-700">Reassignment needed</span>
+              <span className="text-xs text-yellow-700">Review</span>
             </div>
           </div>
         </div>

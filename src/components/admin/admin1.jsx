@@ -112,7 +112,7 @@
 //           Overview of LC processing activity and key metrics.
 //         </p>
 //       </div>
-      
+
 //       {/* Stats Grid */}
 //       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 //         {stats.map((stat) => {
@@ -133,7 +133,7 @@
 //           );
 //         })}
 //       </div>
-      
+
 //       {/* Two-column layout for smaller sections */}
 //       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 //         {/* Recent Activity */}
@@ -180,13 +180,13 @@
 //             </a>
 //           </div>
 //         </Card>
-        
+
 //         {/* Alerts */}
 //         <Card title="Alerts & Notifications">
 //           <div className="space-y-4">
 //             {alerts.map((alert) => {
 //               let Icon, bgColor, textColor;
-              
+
 //               switch (alert.severity) {
 //                 case 'error':
 //                   Icon = ExclamationCircleIcon;
@@ -205,7 +205,7 @@
 //                   textColor = 'text-blue-800';
 //                   break;
 //               }
-              
+
 //               return (
 //                 <div
 //                   key={alert.id}
@@ -233,7 +233,7 @@
 //           </div>
 //         </Card>
 //       </div>
-      
+
 //       {/* Performance Metrics */}
 //       {/* <div className="mt-6">
 //         <Card title="Processing Performance">
@@ -282,7 +282,7 @@
 //   Legend
 // } from 'chart.js';
 // // import { fetch_lcs_stats, fetch_recent_activities } from "../../apis/admin";
- 
+
 // ChartJS.register(
 //   CategoryScale,
 //   LinearScale,
@@ -325,7 +325,7 @@
 //   const [recentActivities, setRecentActivities] = useState([]);
 //   const [loading, setLoading] = useState(true);
 //   const [error, setError] = useState(null);
- 
+
 //   const colors = {
 //     total: {
 //       base: 'rgba(178, 171, 171, 0.366)',      
@@ -353,10 +353,10 @@
 //           fetch_lcs_stats(),
 //           fetch_recent_activities()
 //         ]);
-        
+
 //         setLcStats(statsData);
 //         setRecentActivities(activitiesData);
-        
+
 //         // Calculate totals for the status metrics
 //         const totals = statsData.reduce((acc, curr) => {
 //           return {
@@ -390,11 +390,11 @@
 //     const date = new Date(dateString);
 //     const now = new Date();
 //     const seconds = Math.floor((now - date) / 1000);
-    
+
 //     const minutes = Math.floor(seconds / 60);
 //     const hours = Math.floor(minutes / 60);
 //     const remainingMinutes = minutes % 60;
-  
+
 //     if (minutes < 1) {
 //       return 'less than a minute ago';
 //     } else if (hours < 1) {
@@ -403,7 +403,7 @@
 //       return `${hours} hour${hours === 1 ? '' : 's'}${remainingMinutes > 0 ? ` ${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}` : ''} ago`;
 //     }
 //   };
-  
+
 //    const [statusMetrics, setStatusMetrics] = useState([
 //     {
 //       title: 'Total LC Documents',
@@ -610,7 +610,7 @@
 //           Overview of LC processing activity and key metrics.
 //         </p>
 //       </div>
-      
+
 //       {/* Key Metrics Cards */}
 //       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 //         {statusMetrics.map((metric, index) => (
@@ -632,7 +632,7 @@
 //           </div>
 //         ))}
 //       </div>
-      
+
 //       {/* Main Content Section - 50/50 split */}
 //       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 //         {/* Recent Activity Panel */}
@@ -684,7 +684,7 @@
 //             </a>
 //           </div>
 //         </div>
-        
+
 //         {/* LC Documents Stacked Bar Chart */}
 //         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
 //           <h2 className="text-lg font-semibold text-gray-900 mb-4">LC Documents Overview</h2>
@@ -704,16 +704,12 @@
 // };
 
 // export default AdminDashboard;
-
-
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
 import axiosInstance from '../authentication/axios';
+import { useAuth } from '../../context/AuthContext';
 
-// import { useWebSocket } from '../../context/WebSocketContext';
-
-
-import { 
+import {
   ClipboardDocumentCheckIcon,
   ChevronRightIcon,
   DocumentTextIcon,
@@ -722,18 +718,18 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { Bar } from 'react-chartjs-2';
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
   LineElement,
   BarElement,
-  Title, 
-  Tooltip, 
+  Title,
+  Tooltip,
   Legend
 } from 'chart.js';
- 
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -745,10 +741,37 @@ ChartJS.register(
   Legend
 );
 
+// AUTHENTICATION HELPER FUNCTIONS
+const validateUserAuth = (userId, userInfo) => {
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  if (!userInfo) {
+    throw new Error('User information is required');
+  }
+  return true;
+};
 
-const fetch_lcs_stats = async () => {
+const logUserInfo = (userId, userInfo, operation) => {
+  console.log(`[${operation}] Current user ID:`, userId);
+  console.log(`[${operation}] Current user info:`, userInfo);
+};
+
+const createAuthenticatedRequest = (userId, userInfo) => {
+  validateUserAuth(userId, userInfo);
+  return {
+    params: { userId },
+    // Add any additional auth headers if needed
+    headers: {
+      'User-Context': JSON.stringify({ userId, userInfo })
+    }
+  };
+};
+
+// LC STATS FUNCTIONS
+const fetch_lcs_stats = async (requestConfig) => {
   try {
-    const response = await axiosInstance.get("/admin/lcs_stats");
+    const response = await axiosInstance.get("/admin/lcs_stats", requestConfig);
     console.log("LC Stats response:", response.data);
     return response.data;
   } catch (error) {
@@ -758,15 +781,92 @@ const fetch_lcs_stats = async () => {
   }
 };
 
-const fetch_recent_activities = async () => {
+const fetch_recent_activities = async (requestConfig) => {
   try {
-    const response = await axiosInstance.get("/admin/recent_activities");
+    const response = await axiosInstance.get("/admin/recent_activities", requestConfig);
     console.log("Activities response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching recent activities:", error);
     // Return empty data instead of throwing to avoid breaking the UI
     return [];
+  }
+};
+
+// DATA PROCESSING FUNCTIONS
+const processLcStatsData = (statsData) => {
+  if (!Array.isArray(statsData) || statsData.length === 0) {
+    return {
+      totals: { total_lcs: 0, completed_lcs: 0, assigned_lcs: 0 },
+      hasData: false
+    };
+  }
+
+  const totals = statsData.reduce((acc, curr) => {
+    return {
+      total_lcs: acc.total_lcs + curr.total_lcs,
+      completed_lcs: acc.completed_lcs + curr.completed_lcs,
+      assigned_lcs: acc.assigned_lcs + (curr.assigned_lcs || 0)
+    };
+  }, { total_lcs: 0, completed_lcs: 0, assigned_lcs: 0 });
+
+  return { totals, hasData: true };
+};
+
+const updateStatusMetrics = (statusMetrics, totals) => {
+  return statusMetrics.map(metric => {
+    switch (metric.title) {
+      case 'Total LC Documents':
+        return { ...metric, count: totals.total_lcs };
+      case 'Completed':
+        return { ...metric, count: totals.completed_lcs };
+      case 'Assigned':
+        return { ...metric, count: totals.assigned_lcs || 0 };
+      case 'Pending':
+        return { ...metric, count: totals.total_lcs - totals.completed_lcs };
+      default:
+        return metric;
+    }
+  });
+};
+
+// MAIN DATA FETCHING ORCHESTRATOR
+const fetchDashboardData = async (userId, userInfo) => {
+  try {
+    logUserInfo(userId, userInfo, 'Dashboard Data Fetch');
+    
+    // Create authenticated request configuration
+    const requestConfig = createAuthenticatedRequest(userId, userInfo);
+    
+    // Fetch all data concurrently
+    const [statsData, activitiesData] = await Promise.all([
+      fetch_lcs_stats(requestConfig),
+      fetch_recent_activities(requestConfig)
+    ]);
+
+    return {
+      success: true,
+      data: {
+        statsData,
+        activitiesData
+      }
+    };
+  } catch (error) {
+    console.error("Dashboard data fetch error:", error);
+    
+    if (error.response && error.response.status === 403) {
+      return {
+        success: false,
+        error: "You don't have permission to access admin data.",
+        permissionDenied: true
+      };
+    }
+    
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || "An error occurred while fetching data",
+      permissionDenied: false
+    };
   }
 };
 
@@ -777,38 +877,30 @@ const formatActionText = (activity) => {
 };
 
 const AdminDashboard = () => {
+  const { userId, userInfo } = useAuth();
+  
   const [lcStats, setLcStats] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasPermission, setHasPermission] = useState(true);
 
-  // const { 
-  //   isConnected, 
-  //   connectionStatus, 
-  //   lastMessage, 
-  //   connect, 
-  //   disconnect, 
-  //   sendMessage 
-  // } = useWebSocket();
-
-
   const colors = {
     total: {
-      base: 'rgba(178, 171, 171, 0.366)',      
-      light: 'rgba(174, 213, 249, 0.781)'      
+      base: 'rgba(178, 171, 171, 0.366)',
+      light: 'rgba(174, 213, 249, 0.781)'
     },
     assigned: {
-      base: 'rgba(245, 158, 11, 0.85)',     
-      light: 'rgba(241, 187, 92, 0.3)'       
+      base: 'rgba(245, 158, 11, 0.85)',
+      light: 'rgba(241, 187, 92, 0.3)'
     },
     completed: {
-      base: 'rgba(74, 107, 174, 0.85)',    
-      light: 'rgba(98, 157, 83, 0.3)'       
+      base: 'rgba(74, 107, 174, 0.85)',
+      light: 'rgba(98, 157, 83, 0.3)'
     },
     pending: {
-      base: 'rgba(239, 68, 68, 0.85)',       
-      light: 'rgba(228, 70, 70, 0.3)'       
+      base: 'rgba(239, 68, 68, 0.85)',
+      light: 'rgba(228, 70, 70, 0.3)'
     }
   };
 
@@ -843,88 +935,64 @@ const AdminDashboard = () => {
     }
   ]);
 
-
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Check permission first
-        try {
-          // Attempt to fetch both LC stats and recent activities in parallel
-          const [statsData, activitiesData] = await Promise.all([
-            fetch_lcs_stats(),
-            fetch_recent_activities()
-          ]);
-          
-          // Check if we have data or empty arrays from error handling
-          if (Array.isArray(statsData) && statsData.length > 0) {
-            setLcStats(statsData);
-            
-            // Calculate totals for the status metrics
-            const totals = statsData.reduce((acc, curr) => {
-              return {
-                total_lcs: acc.total_lcs + curr.total_lcs,
-                completed_lcs: acc.completed_lcs + curr.completed_lcs,
-                assigned_lcs: acc.assigned_lcs + (curr.assigned_lcs || 0)
-              };
-            }, { total_lcs: 0, completed_lcs: 0, assigned_lcs: 0 });
+    const initializeDashboard = async () => {
+      // Wait for user authentication to be available
+      if (!userId || !userInfo) {
+        console.log('User authentication not available yet, skipping data fetch');
+        setLoading(false);
+        return;
+      }
 
-            setStatusMetrics(prev => prev.map(metric => {
-              if (metric.title === 'Total LC Documents') {
-                return { ...metric, count: totals.total_lcs };
-              } else if (metric.title === 'Completed') {
-                return { ...metric, count: totals.completed_lcs };
-              } else if (metric.title === 'Assigned') {
-                return { ...metric, count: totals.assigned_lcs || 0 };
-              } else if (metric.title === 'Pending') {
-                return { ...metric, count: totals.total_lcs - totals.completed_lcs };
-              }
-              return metric;
-            }));
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch dashboard data using the orchestrator function
+        const result = await fetchDashboardData(userId, userInfo);
+        
+        if (result.success) {
+          const { statsData, activitiesData } = result.data;
+          
+          // Process LC stats data
+          const { totals, hasData } = processLcStatsData(statsData);
+          
+          if (hasData) {
+            setLcStats(statsData);
+            setStatusMetrics(prev => updateStatusMetrics(prev, totals));
           }
           
+          // Set activities data
           if (Array.isArray(activitiesData)) {
             setRecentActivities(activitiesData);
           }
           
           setHasPermission(true);
-        } catch (err) {
-          if (err.response && err.response.status === 403) {
-            console.error("Permission denied: User does not have admin access");
-            setHasPermission(false);
-            setError("You don't have permission to access admin data.");
-          } else {
-            throw err; // Re-throw other errors
-          }
+        } else {
+          setError(result.error);
+          setHasPermission(!result.permissionDenied);
         }
       } catch (err) {
-        console.error("Dashboard error:", err);
-        setError(err.response?.data?.message || err.message || "An error occurred while fetching data");
+        console.error("Dashboard initialization error:", err);
+        setError("An unexpected error occurred while initializing the dashboard");
+        setHasPermission(true);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-    // Connect to WebSocket after data is fetched
-  //      connect();
-
-  //  // Cleanup function
-  //    return () => {
-  //        disconnect();
-  //    };
- 
-  }, []);
-
+    initializeDashboard();
+  }, [userId, userInfo]);
 
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
-    
+
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-  
+
     if (minutes < 1) {
       return 'less than a minute ago';
     } else if (hours < 1) {
@@ -1025,7 +1093,7 @@ const AdminDashboard = () => {
           family: 'Inter, sans-serif'
         },
         callbacks: {
-          label: function(context) {
+          label: function (context) {
             const label = context.dataset.label || '';
             return `${label}: ${context.raw}`;
           }
@@ -1080,6 +1148,20 @@ const AdminDashboard = () => {
     barPercentage: 0.6,
     categoryPercentage: 0.5
   };
+
+  // Loading state while waiting for user authentication
+  // if (!userId || !userInfo) {
+  //   return (
+  //     <DashboardLayout>
+  //       <div className="flex justify-center items-center h-64">
+  //         <div className="animate-pulse flex flex-col items-center">
+  //           <div className="h-8 w-8 mb-4 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+  //           <p>Loading user authentication...</p>
+  //         </div>
+  //       </div>
+  //     </DashboardLayout>
+  //   );
+  // }
 
   if (loading) {
     return (
@@ -1139,7 +1221,7 @@ const AdminDashboard = () => {
                 <p>{error}</p>
               </div>
               <div className="mt-4">
-                <button 
+                <button
                   onClick={() => window.location.reload()}
                   className="px-2 py-1.5 rounded-md text-sm font-medium text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600"
                 >
@@ -1161,12 +1243,12 @@ const AdminDashboard = () => {
           Overview of LC processing activity and key metrics.
         </p>
       </div>
-      
+
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         {statusMetrics.map((metric, index) => (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="bg-white rounded-xl shadow-sm p-6 border border-gray-100"
           >
             <div className="flex items-start space-x-4">
@@ -1183,7 +1265,7 @@ const AdminDashboard = () => {
           </div>
         ))}
       </div>
-      
+
       {/* Main Content Section - 50/50 split */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Recent Activity Panel */}
@@ -1240,7 +1322,7 @@ const AdminDashboard = () => {
             </div>
           )}
         </div>
-        
+
         {/* LC Documents Stacked Bar Chart */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">LC Documents Overview</h2>

@@ -86,59 +86,60 @@ const DataTable = ({ columns, data, onRowAction, actionColumn }) => {
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => requestSort(column.key)}
-              >
-                <div className="flex items-center">
-                  {column.header}
-                  {sortConfig.key === column.key && (
-                    <span className="ml-2">
-                      {sortConfig.direction === 'ascending' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </div>
-              </th>
-            ))}
-            {actionColumn && <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {sortedData.length > 0 ? (
-            sortedData.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50">
-                {columns.map((column) => (
-                  <td key={column.key} className="px-6 py-4 whitespace-nowrap">
-                    {column.render ? column.render(row) : row[column.key]}
-                  </td>
-                ))}
-                {actionColumn && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {actionColumn(row, onRowAction)}
-                  </td>
-                )}
-              </tr>
-            ))
-          ) : (
+    <div className="relative">
+      {/* Remove overflow-x-auto and add relative positioning */}
+      <div className="min-w-full">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <td colSpan={columns.length + (actionColumn ? 1 : 0)} className="px-6 py-4 text-center text-sm text-gray-500">
-                No data available
-              </td>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => requestSort(column.key)}
+                >
+                  <div className="flex items-center">
+                    {column.header}
+                    {sortConfig.key === column.key && (
+                      <span className="ml-2">
+                        {sortConfig.direction === 'ascending' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
+                </th>
+              ))}
+              {actionColumn && <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {sortedData.length > 0 ? (
+              sortedData.map((row, rowIndex) => (
+                <tr key={rowIndex} className="hover:bg-gray-50">
+                  {columns.map((column) => (
+                    <td key={column.key} className="px-6 py-4 whitespace-nowrap">
+                      {column.render ? column.render(row) : row[column.key]}
+                    </td>
+                  ))}
+                  {actionColumn && (
+                    <td className="px-6 py-4 whitespace-nowrap relative">
+                      {actionColumn(row, onRowAction)}
+                    </td>
+                  )}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={columns.length + (actionColumn ? 1 : 0)} className="px-6 py-4 text-center text-sm text-gray-500">
+                  No data available
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
 export default DataTable;
-
-

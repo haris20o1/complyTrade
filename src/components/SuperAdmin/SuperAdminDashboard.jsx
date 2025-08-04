@@ -50,7 +50,8 @@ const SuperAdminAudits = () => {
           } else if (err.response?.status === 404) {
             setError('Audit requests endpoint not found. API route may have changed.');
           } else {
-            setError(`Failed to load audit requests: ${err.message}`);
+            setError(`No Audit Requests Available`);
+            console.log(err.message);
           }
         } finally {
           setLoading(false);
@@ -257,29 +258,32 @@ const actionColumn = (row, onRowAction) => {
                     </div>
                   </div>
                 ) : error ? (
-                  <div className="px-4 py-5 sm:px-6">
-                    <div className="rounded-md bg-red-50 p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
-                          <div className="mt-2 text-sm text-red-700">
-                            <p>{error}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          onClick={handleRefresh}
-                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          Try Again
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  // <div className="px-4 py-5 sm:px-6">
+                  //   <div className="rounded-md bg-red-50 p-4">
+                  //     <div className="flex">
+                  //       <div className="flex-shrink-0">
+                  //         <XCircleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                  //       </div>
+                  //       <div className="ml-3">
+                  //         <h3 className="text-sm font-medium text-red-800">Error loading data</h3>
+                  //         <div className="mt-2 text-sm text-red-700">
+                  //           <p>{error}</p>
+                  //         </div>
+                  //       </div>
+                  //     </div>
+                  //     <div className="mt-3 flex justify-end">
+                  //       <button
+                  //         onClick={handleRefresh}
+                  //         className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  //       >
+                  //         Try Again
+                  //       </button>
+                  //     </div>
+                  //   </div>
+                  // </div>
+                    <div className="bg-gray-50 border border-gray-300 text-gray-600 text-sm px-4 py-3 rounded-md text-center shadow-sm">
+            {error}
+          </div>
                 ) : auditRequests.length === 0 ? (
                   <div className="px-4 py-10 sm:px-6 text-center">
                     <div className="flex flex-col items-center">

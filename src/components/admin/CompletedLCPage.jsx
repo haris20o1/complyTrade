@@ -270,7 +270,7 @@ const CompletedLCPage = () => {
         setError(null);
       } catch (err) {
         console.error('Failed to fetch completed LCs:', err);
-        setError('Failed to load data. Please try again later.');
+        setError('No LC completed document found');
       } finally {
         setLoading(false);
       }
@@ -412,7 +412,9 @@ const CompletedLCPage = () => {
             <div className="text-gray-500">Loading data...</div>
           </div>
         ) : error ? (
-          <div className="text-red-500 p-4 text-center">{error}</div>
+          <div className="bg-gray-50 border border-gray-300 text-gray-600 text-sm px-4 py-3 rounded-md text-center shadow-sm">
+            {error}
+          </div>
         ) : (
           <>
             <DataTable 

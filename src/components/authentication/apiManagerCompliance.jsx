@@ -148,6 +148,31 @@ export const lcService = {
       throw error;
     }
   },
+  downloadLCDocumentt: async (lcNumber) => {
+    try {
+      const response = await axiosInstance.get(`/admin/lc_doc/${lcNumber}?support_docs=true`, {
+        responseType: 'blob' // Important for handling binary data like PDFs
+      });
+      
+      // Create a blob URL for opening in a new tab
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      return { url };
+    } catch (error) {
+      console.error(`Error loading LC document for ${lcNumber}:`, error);
+      throw error;
+    }
+  },
+  getAmendments: async (lcNumber) => {
+    try {
+      const response = await axiosInstance.get(`/admin/amendments/${lcNumber}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching amendments for ${lcNumber}:`, error);
+      throw error;
+    }
+  },
 };
 
 export default lcService;

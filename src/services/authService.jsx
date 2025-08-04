@@ -65,7 +65,7 @@ export const isAuthenticated = () => {
     localStorage.removeItem('user_role');
     
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.href = '/';
   };
   
   // Validate token (you can expand this with more sophisticated token validation)

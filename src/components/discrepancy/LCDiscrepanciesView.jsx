@@ -14,6 +14,7 @@ const LCDiscrepanciesView = ({
   onNewSubPointChange,
   onSubPointSelect,
   onSaveDraft,
+  onDocumentClick,
   onSignatureValidityUpdate
 }) => {
   const [isSignatureDropdownOpen, setSignatureDropdownOpen] = useState(false);
@@ -31,7 +32,10 @@ const LCDiscrepanciesView = ({
           key={mainPoint.doc_uuid}
           className={`${activeTab === mainIndex ? 'block' : 'hidden'}`}
         >
-          <DocumentHeader mainPoint={mainPoint} />
+         <DocumentHeader 
+  mainPoint={mainPoints[activeTab]} 
+  onDocumentClick={onDocumentClick} // Add this prop
+/>
 
           {/* Signature Verification Section */}
           {mainPoint.signatures && mainPoint.signatures.length > 0 && (

@@ -336,10 +336,352 @@
 
 // export default ManagerDashboard;
 
+// import React, { useState, useEffect } from 'react';
+// import { lcService } from '../authentication/apiManagerCompliance';
+// import DashboardLayout from '../../components/layouts/DashboardLayout';
+
+// import { 
+//   ChevronRightIcon,
+//   DocumentIcon,
+//   ClockIcon,
+//   ExclamationCircleIcon,
+//   DocumentTextIcon
+// } from '@heroicons/react/24/outline';
+// import { format } from 'date-fns';
+
+// const ManagerDashboard = () => {
+//   const [priorityLCs, setPriorityLCs] = useState([]);
+//   const [inProgressLCs, setInProgressLCs] = useState([]);
+//   const [assignedLCs, setAssignedLCs] = useState([]);
+//   const [downloading, setDownloading] = useState(false);
+  
+//   // Separate loading and error states for each section
+//   const [loadingStates, setLoadingStates] = useState({
+//     priority: true,
+//     inProgress: true,
+//     assigned: true
+//   });
+  
+//   const [errorStates, setErrorStates] = useState({
+//     priority: null,
+//     inProgress: null,
+//     assigned: null
+//   });
+
+//   // Function to update a specific loading state
+//   const updateLoadingState = (key, value) => {
+//     setLoadingStates(prev => ({ ...prev, [key]: value }));
+//   };
+
+//   // Function to update a specific error state
+//   const updateErrorState = (key, value) => {
+//     setErrorStates(prev => ({ ...prev, [key]: value }));
+//   };
+
+//   // Handle downloading/opening LC document - same as in UploadedLCPage
+//   const handleOpenLCDocument = async (lcNumber) => {
+//     try {
+//       setDownloading(true);
+  
+//       // Instead of opening PDF directly, open the new PDF viewer page
+//       const pdfViewerUrl = `/lc-pdf-viewer/${encodeURIComponent(lcNumber)}`;
+//       window.open(pdfViewerUrl, '_blank');
+      
+//       console.log(`Opened PDF viewer for ${lcNumber} in new tab`);
+//     } catch (err) {
+//       console.error(`Failed to open PDF viewer for ${lcNumber}:`, err);
+//       alert('Failed to open PDF viewer. Please try again later.');
+//     } finally {
+//       setDownloading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     // Fetch priority LCs
+//     const fetchPriorityLCs = async () => {
+//       try {
+//         updateLoadingState('priority', true);
+//         const data = await lcService.getPriorityLCs();
+//         setPriorityLCs(data);
+//         updateErrorState('priority', null);
+//       } catch (err) {
+//         console.error('Error fetching priority LCs:', err);
+//         updateErrorState('priority', 'Failed to load priority LCs.');
+//       } finally {
+//         updateLoadingState('priority', false);
+//       }
+//     };
+
+//     // Fetch in-progress LCs
+//     const fetchInProgressLCs = async () => {
+//       try {
+//         updateLoadingState('inProgress', true);
+//         const data = await lcService.getInProgressLCs();
+//         setInProgressLCs(data);
+//         updateErrorState('inProgress', null);
+//       } catch (err) {
+//         console.error('Error fetching in-progress LCs:', err);
+//         updateErrorState('inProgress', 'No LC inprogress');
+//       } finally {
+//         updateLoadingState('inProgress', false);
+//       }
+//     };
+
+//     // Fetch assigned LCs
+//     const fetchAssignedLCs = async () => {
+//       try {
+//         updateLoadingState('assigned', true);
+//         const data = await lcService.getAssignedLCs();
+//         // Only include LCs that are not in progress
+//         const actualAssigned = data.filter(lc => !lc.inprogress);
+//         setAssignedLCs(actualAssigned);
+//         updateErrorState('assigned', null);
+//       } catch (err) {
+//         console.error('Error fetching assigned LCs:', err);
+//         updateErrorState('assigned', 'Failed to load assigned LCs.');
+//       } finally {
+//         updateLoadingState('assigned', false);
+//       }
+//     };
+    
+//     // Execute all fetch functions independently
+//     fetchPriorityLCs();
+//     fetchInProgressLCs();
+//     fetchAssignedLCs();
+//   }, []);
+
+//   const handleViewLC = (lcNo) => {
+//     // Navigate to LC details page
+//     console.log('Viewing LC:', lcNo);
+//     // Add navigation logic here
+//     window.open(`/discrepencies/${lcNo}`, '_blank');
+//   };
+
+//   const formatDate = (dateString) => {
+//     try {
+//       return format(new Date(dateString), 'yyyy-MM-dd');
+//     } catch (err) {
+//       return dateString;
+//     }
+//   };
+
+//   // Calculate days until expiry
+//   const getDaysUntilExpiry = (endDate) => {
+//     const today = new Date();
+//     const expiryDate = new Date(endDate);
+//     const diffTime = expiryDate - today;
+//     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+//     return diffDays;
+//   };
+
+//   // Get status badge class based on days until expiry
+//   const getStatusBadgeClass = (endDate) => {
+//     const daysLeft = getDaysUntilExpiry(endDate);
+//     if (daysLeft <= 7) return 'bg-red-100 text-red-800'; // Critical
+//     if (daysLeft <= 30) return 'bg-yellow-100 text-yellow-800'; // Warning
+//     return 'bg-green-100 text-green-800'; // Good
+//   };
+
+//   // Section rendering function with loading and error handling
+//   const renderSection = (title, icon, data, loading, error, emptyMessage, iconBgColor, iconColor, borderColor, onView, onAction, actionText, actionBtnClass) => {
+//     return (
+//       <div className={`bg-white rounded-lg shadow-md mb-8 ${borderColor ? `border-l-4 ${borderColor}` : ''}`}>
+//         <div className="border-b border-gray-200 px-6 py-4 flex items-center">
+//           {icon && React.cloneElement(icon, { className: `h-5 w-5 ${iconColor} mr-2` })}
+//           <h2 className="text-lg font-medium text-gray-900">{title}</h2>
+//         </div>
+        
+//         {loading ? (
+//           <div className="p-6 flex justify-center">
+//             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
+//           </div>
+//         ) : error ? (
+//           <div className="bg-yellow-50 p-4 mx-6 my-4 rounded">
+//             <div className="flex items-center">
+//               {/* <ExclamationCircleIcon className="h-5 w-5 text-red-500 mr-2" /> */}
+//               <p className="text-yellow-700">{error}</p>
+//             </div>
+//             {/* <button 
+//               className="mt-2 bg-red-100 hover:bg-red-200 text-red-800 font-medium py-1 px-3 rounded text-sm"
+//               onClick={() => window.location.reload()}
+//             >
+//               Retry
+//             </button> */}
+//           </div>
+//         ) : data.length === 0 ? (
+//           <div className="p-6 text-left text-gray-500">
+//             {emptyMessage}
+//           </div>
+//         ) : (
+//           <div className="divide-y divide-gray-200">
+//             {data.map(lc => (
+//               <div key={lc.lc_no} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+//                 <div className="flex items-center justify-between">
+//                   <div className="flex items-center">
+//                     <div className={`${iconBgColor} p-2 rounded mr-4`}>
+//                       <DocumentTextIcon className={`h-6 w-6 ${iconColor}`} />
+//                     </div>
+//                     <div>
+//                       <h3 className="font-medium text-gray-900 flex items-center">
+//                         {/* Make LC number clickable like in UploadedLCPage */}
+//                         <button
+//                           className="text-blue-600 hover:text-blue-800 hover:underline focus:outline-none mr-2"
+//                           onClick={() => handleOpenLCDocument(lc.lc_no)}
+//                           disabled={downloading}
+//                         >
+//                           LC{lc.lc_no}
+//                         </button>
+//                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(lc.end_date)}`}>
+//                           {getDaysUntilExpiry(lc.end_date)} days left
+//                         </span>
+//                       </h3>
+//                       <p className="text-sm text-gray-500 mt-1">
+//                         Amount: ${Number(lc.lc_amount).toLocaleString()} | Issued: {formatDate(lc.init_date)} | Expires: {formatDate(lc.end_date)}
+//                       </p>
+//                     </div>
+//                   </div>
+//                   <div className="flex space-x-2">
+//                   <button 
+//                       // onClick={() => onView(lc.lc_no)}
+//                       className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded text-sm flex items-center"
+//                     >
+//                       Run scrutiny                      <ChevronRightIcon className="h-4 w-4 ml-1" />
+//                     </button>
+//                     <button 
+//                       onClick={() => onView(lc.lc_no)}
+//                       className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded text-sm flex items-center"
+//                     >
+//                       View Details
+//                       <ChevronRightIcon className="h-4 w-4 ml-1" />
+//                     </button>
+                   
+//                     {onAction && (
+//                       <button 
+//                         onClick={() => onAction(lc.lc_no)}
+//                         className={`${actionBtnClass} font-medium py-2 px-4 rounded text-sm`}
+//                       >
+//                         {actionText}
+//                       </button>
+//                     )}
+//                   </div>
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         )}
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <DashboardLayout>
+//       <div className="p-6 w-full">
+//         <div className="mb-8 text-left">
+//           <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to the Compliance Manager Dashboard</h1>
+//           <p className="text-gray-600">Monitor and process Letters of Credit assigned to you</p>
+//         </div>
+
+//         {/* Key metrics */}
+//         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+//           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm font-medium text-gray-500">Priority LCs</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {loadingStates.priority ? "-" : priorityLCs.length}
+//                 </p>
+//               </div>
+//               <div className="bg-red-100 p-3 rounded-full">
+//                 <ExclamationCircleIcon className="h-6 w-6 text-red-600" />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm font-medium text-gray-500">In Progress</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {loadingStates.inProgress ? "-" : inProgressLCs.length}
+//                 </p>
+//               </div>
+//               <div className="bg-yellow-100 p-3 rounded-full">
+//                 <ClockIcon className="h-6 w-6 text-yellow-600" />
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm font-medium text-gray-500">Assigned</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {loadingStates.assigned ? "-" : assignedLCs.length}
+//                 </p>
+//               </div>
+//               <div className="bg-blue-100 p-3 rounded-full">
+//                 <DocumentIcon className="h-6 w-6 text-blue-600" />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Priority LCs Section */}
+//         {renderSection(
+//           "Priority", 
+//           <ExclamationCircleIcon />, 
+//           priorityLCs, 
+//           loadingStates.priority, 
+//           errorStates.priority,
+//           "No priority Letters of Credit at this time",
+//           "bg-red-100",
+//           "text-red-600",
+//           null,
+//           handleViewLC,
+    
+//         )}
+
+//         {/* In Progress Section */}
+//         {renderSection(
+//           "In Progress", 
+//           <ClockIcon />, 
+//           inProgressLCs, 
+//           loadingStates.inProgress, 
+//           errorStates.inProgress,
+//           "No Letters of Credit in progress",
+//           "bg-yellow-100",
+//           "text-yellow-600",
+//           null,
+//           handleViewLC,
+//           null,
+//           null,
+//           null
+//         )}
+
+//         {/* Assigned Section */}
+//         {renderSection(
+//           "Assigned", 
+//           <DocumentIcon />, 
+//           assignedLCs, 
+//           loadingStates.assigned, 
+//           errorStates.assigned,
+//           "No Letters of Credit assigned",
+//           "bg-blue-100",
+//           "text-blue-600",
+//           null,
+//           handleViewLC,
+//         )}
+//       </div>
+//     </DashboardLayout>  
+//   );
+// };
+
+// export default ManagerDashboard;
+
+
 import React, { useState, useEffect } from 'react';
 import { lcService } from '../authentication/apiManagerCompliance';
 import DashboardLayout from '../../components/layouts/DashboardLayout';
-
 
 import { 
   ChevronRightIcon,
@@ -354,6 +696,13 @@ const ManagerDashboard = () => {
   const [priorityLCs, setPriorityLCs] = useState([]);
   const [inProgressLCs, setInProgressLCs] = useState([]);
   const [assignedLCs, setAssignedLCs] = useState([]);
+  const [downloading, setDownloading] = useState(false);
+  
+  // Add state for tracking which LCs are being processed for scrutiny
+  const [processingLCs, setProcessingLCs] = useState(new Set());
+  
+  // Add state for tracking which LCs have had scrutiny completed
+  const [scrutinizedLCs, setScrutinizedLCs] = useState(new Set());
   
   // Separate loading and error states for each section
   const [loadingStates, setLoadingStates] = useState({
@@ -376,6 +725,73 @@ const ManagerDashboard = () => {
   // Function to update a specific error state
   const updateErrorState = (key, value) => {
     setErrorStates(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Handle running scrutiny for an LC
+  const handleRunScrutiny = async (lcNo) => {
+    setProcessingLCs(prev => new Set(prev).add(lcNo));
+    
+    try {
+      // Send API request to scrutiny endpoint
+      const response = await fetch('https://192.168.18.132:50013/compliance/lc/scruitny/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any authentication headers if needed
+          // 'Authorization': `Bearer ${token}`,
+        },
+        // body: JSON.stringify({
+        //   lc_no: lcNo,
+        //   // Add any other required data
+        // })
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const result = await response.json();
+      console.log(`Scrutiny initiated for LC ${lcNo}:`, result);
+      
+      // Add 90-second delay to simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Mark this LC as scrutinized
+      setScrutinizedLCs(prev => new Set(prev).add(lcNo));
+      
+      // Optional: Show success message
+      // You might want to show a success toast or update UI
+      alert(`Scrutiny process completed successfully for LC ${lcNo}`);
+      
+    } catch (error) {
+      console.error('Error running scrutiny:', error);
+      // Handle error (show toast, alert, etc.)
+      alert(`Failed to run scrutiny for LC ${lcNo}. Please try again.`);
+    } finally {
+      setProcessingLCs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(lcNo);
+        return newSet;
+      });
+    }
+  };
+
+  // Handle downloading/opening LC document - same as in UploadedLCPage
+  const handleOpenLCDocument = async (lcNumber) => {
+    try {
+      setDownloading(true);
+  
+      // Instead of opening PDF directly, open the new PDF viewer page
+      const pdfViewerUrl = `/lc-pdf-viewer/${encodeURIComponent(lcNumber)}`;
+      window.open(pdfViewerUrl, '_blank');
+      
+      console.log(`Opened PDF viewer for ${lcNumber} in new tab`);
+    } catch (err) {
+      console.error(`Failed to open PDF viewer for ${lcNumber}:`, err);
+      alert('Failed to open PDF viewer. Please try again later.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   useEffect(() => {
@@ -465,7 +881,7 @@ const ManagerDashboard = () => {
   };
 
   // Section rendering function with loading and error handling
-  const renderSection = (title, icon, data, loading, error, emptyMessage, iconBgColor, iconColor, borderColor, onView, onAction, actionText, actionBtnClass) => {
+  const renderSection = (title, icon, data, loading, error, emptyMessage, iconBgColor, iconColor, borderColor, onView, onAction, actionText, actionBtnClass, showRunScrutiny = false) => {
     return (
       <div className={`bg-white rounded-lg shadow-md mb-8 ${borderColor ? `border-l-4 ${borderColor}` : ''}`}>
         <div className="border-b border-gray-200 px-6 py-4 flex items-center">
@@ -480,15 +896,8 @@ const ManagerDashboard = () => {
         ) : error ? (
           <div className="bg-yellow-50 p-4 mx-6 my-4 rounded">
             <div className="flex items-center">
-              {/* <ExclamationCircleIcon className="h-5 w-5 text-red-500 mr-2" /> */}
               <p className="text-yellow-700">{error}</p>
             </div>
-            {/* <button 
-              className="mt-2 bg-red-100 hover:bg-red-200 text-red-800 font-medium py-1 px-3 rounded text-sm"
-              onClick={() => window.location.reload()}
-            >
-              Retry
-            </button> */}
           </div>
         ) : data.length === 0 ? (
           <div className="p-6 text-left text-gray-500">
@@ -496,45 +905,92 @@ const ManagerDashboard = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {data.map(lc => (
-              <div key={lc.lc_no} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className={`${iconBgColor} p-2 rounded mr-4`}>
-                      <DocumentTextIcon className={`h-6 w-6 ${iconColor}`} />
+            {data.map(lc => {
+              const isScrutinized = scrutinizedLCs.has(lc.lc_no);
+              const isProcessing = processingLCs.has(lc.lc_no);
+              
+              return (
+                <div key={lc.lc_no} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className={`${iconBgColor} p-2 rounded mr-4`}>
+                        <DocumentTextIcon className={`h-6 w-6 ${iconColor}`} />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900 flex items-center">
+                          {/* Make LC number clickable like in UploadedLCPage */}
+                          <button
+                            className="text-blue-600 hover:text-blue-800 hover:underline focus:outline-none mr-2"
+                            onClick={() => handleOpenLCDocument(lc.lc_no)}
+                            disabled={downloading}
+                          >
+                            LC{lc.lc_no}
+                          </button>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(lc.end_date)}`}>
+                            {getDaysUntilExpiry(lc.end_date)} days left
+                          </span>
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Amount: ${Number(lc.lc_amount).toLocaleString()} | Issued: {formatDate(lc.init_date)} | Expires: {formatDate(lc.end_date)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 flex items-center">
-                        <span className="mr-2">LC{lc.lc_no}</span>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(lc.end_date)}`}>
-                          {getDaysUntilExpiry(lc.end_date)} days left
-                        </span>
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Amount: ${Number(lc.lc_amount).toLocaleString()} | Issued: {formatDate(lc.init_date)} | Expires: {formatDate(lc.end_date)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => onView(lc.lc_no)}
-                      className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium py-2 px-4 rounded text-sm flex items-center"
-                    >
-                      View Details
-                      <ChevronRightIcon className="h-4 w-4 ml-1" />
-                    </button>
-                    {onAction && (
+                    <div className="flex space-x-2">
+                      {/* Only show Run scrutiny button if showRunScrutiny is true and not yet scrutinized */}
+                      {showRunScrutiny && !isScrutinized && (
+                        <button 
+                          onClick={() => handleRunScrutiny(lc.lc_no)}
+                          disabled={isProcessing}
+                          className={`${
+                            isProcessing 
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                              : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700'
+                          } font-medium py-2 px-4 rounded text-sm flex items-center transition-colors`}
+                        >
+                          {isProcessing ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              Run scrutiny
+                              <ChevronRightIcon className="h-4 w-4 ml-1" />
+                            </>
+                          )}
+                        </button>
+                      )}
+                      
+                      {/* View Details button - disabled for assigned LCs until scrutiny is complete */}
                       <button 
-                        onClick={() => onAction(lc.lc_no)}
-                        className={`${actionBtnClass} font-medium py-2 px-4 rounded text-sm`}
+                        onClick={() => onView(lc.lc_no)}
+                        disabled={showRunScrutiny && !isScrutinized}
+                        className={`${
+                          showRunScrutiny && !isScrutinized
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-indigo-100 hover:bg-indigo-200 text-indigo-700'
+                        } font-medium py-2 px-4 rounded text-sm flex items-center transition-colors`}
                       >
-                        {actionText}
+                        View Details
+                        <ChevronRightIcon className="h-4 w-4 ml-1" />
                       </button>
-                    )}
+                     
+                      {onAction && (
+                        <button 
+                          onClick={() => onAction(lc.lc_no)}
+                          className={`${actionBtnClass} font-medium py-2 px-4 rounded text-sm`}
+                        >
+                          {actionText}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -594,7 +1050,7 @@ const ManagerDashboard = () => {
           </div>
         </div>
 
-        {/* Priority LCs Section */}
+        {/* Priority LCs Section - NO Run scrutiny button */}
         {renderSection(
           "Priority", 
           <ExclamationCircleIcon />, 
@@ -606,10 +1062,13 @@ const ManagerDashboard = () => {
           "text-red-600",
           null,
           handleViewLC,
-    
+          null,
+          null,
+          null,
+          false // showRunScrutiny = false
         )}
 
-        {/* In Progress Section */}
+        {/* In Progress Section - NO Run scrutiny button */}
         {renderSection(
           "In Progress", 
           <ClockIcon />, 
@@ -623,10 +1082,11 @@ const ManagerDashboard = () => {
           handleViewLC,
           null,
           null,
-          null
+          null,
+          false // showRunScrutiny = false
         )}
 
-        {/* Assigned Section */}
+        {/* Assigned Section - WITH Run scrutiny button */}
         {renderSection(
           "Assigned", 
           <DocumentIcon />, 
@@ -638,6 +1098,10 @@ const ManagerDashboard = () => {
           "text-blue-600",
           null,
           handleViewLC,
+          null,
+          null,
+          null,
+          true // showRunScrutiny = true
         )}
       </div>
     </DashboardLayout>  

@@ -79,7 +79,7 @@ const SignupScreen = () => {
       
       // Redirect to login after a delay
       setTimeout(() => {
-        navigate('/login');
+        navigate('/');
       }, 3000);
       
     } catch (err) {

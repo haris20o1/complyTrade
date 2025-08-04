@@ -583,8 +583,8 @@ const UserManagement = () => {
     { id: 'admin', name: 'Administrator' },
     { id: 'it_admin', name: 'IT Admin' },
     { id: 'complyce_manager', name: 'Compliance Manager' },
-    { id: 'swift', name: 'SWIFT Operator' },
-    { id: 'support', name: 'Support Uploader' },
+    { id: 'swift_manager', name: 'SWIFT Operator' },
+    { id: 'support_doc_manager', name: 'Support Uploader' },
     { id: 'super_admin', name: 'Super Admin' }
   ];
 
@@ -595,6 +595,7 @@ const UserManagement = () => {
       const data = await userService.getAllUsers();
       setUsers(data);
       setFilteredUsers(data);
+
     } catch (err) {
       console.error('Failed to fetch users:', err);
       setError('Failed to load users. Please try again later.');
@@ -639,6 +640,7 @@ const UserManagement = () => {
   const handleRoleFilterChange = (roleId) => {
     setSelectedRole(roleId);
     setShowFilterDropdown(false);
+
   };
 
   // Clear all filters
@@ -883,9 +885,9 @@ const UserManagement = () => {
         return 'bg-purple-100 text-purple-800';
       case 'complyce_manager':
         return 'bg-blue-100 text-blue-800';
-      case 'swift':
+      case 'swift_manager':
         return 'bg-green-100 text-green-800';
-      case 'support':
+      case 'support_doc_manager':
         return 'bg-yellow-100 text-yellow-800';
         case 'super_admin':
           return 'bg-orange-100 text-orange-800';
@@ -1237,6 +1239,7 @@ const UserManagement = () => {
                   >
                     Cancel
                   </button>
+                  
                 </div>
               </form>
             </div>

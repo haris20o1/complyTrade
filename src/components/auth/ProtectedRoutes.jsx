@@ -331,14 +331,14 @@ export const AuthRedirectRoute = () => {
         return <Navigate to="/dashboard" replace />;
       case 'complyce_manager':
         return <Navigate to="/dashboardd" replace />;
-      case 'swift':
+      case 'swift_manager':
         return <Navigate to="/swift-upload" replace />;
-      case 'support':
+      case 'support_doc_manager':
         return <Navigate to="/supporting-docs" replace />;
       case 'it_admin':
         return <Navigate to="/users" replace />;
       case 'super_admin':
-        return <Navigate to="/super" replace />;
+        return <Navigate to="/lcstats" replace />;
       default:
         console.log('AuthRedirectRoute: Unknown role, staying on login');
         return <Outlet />;

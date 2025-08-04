@@ -3,7 +3,7 @@
 
 // // Create a base axios instance with common configuration
 // const apiClient = axios.create({
-//   baseURL: 'https://192.168.18.152:50013',
+//   baseURL: 'https://192.168.18.132:50013',
 //   headers: {
 //     'Content-Type': 'application/json',
 //   },
@@ -128,7 +128,7 @@ export const lcService = {
   // Download LC document
   downloadLCDocument: async (lcNumber) => {
     try {
-      const response = await axiosInstance.get(`/admin/lc_doc/${lcNumber}?support_docs=true`, {
+      const response = await axiosInstance.get(`/admin/lc_doc/${lcNumber}?support_docs=false`, {
         responseType: 'blob' // Important for handling binary data like PDFs
       });
       
@@ -213,7 +213,44 @@ deleteLC: async (lcNumber) => {
     throw error;
   }
 },
+downloadSupportingDocument: async (docUuid) => {
+  try {
+    const response = await axiosInstance.get(`/admin/supporting_docs/${docUuid}`);
+    return response.data; // Returns { status: "success", file_url: "..." }
+  } catch (error) {
+    console.error(`Error loading supporting document for ${docUuid}:`, error);
+    throw error;
+  }
+},
 
+
+getAmendments: async (lcNumber) => {
+  try {
+    const response = await axiosInstance.get(`/admin/amendments/${lcNumber}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching amendments for ${lcNumber}:`, error);
+    throw error;
+  }
+},
+getAllDocuments: async (lcNumber) => {
+  try {
+    const response = await axiosInstance.get(`/admin/docs/${lcNumber}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching all documents for ${lcNumber}:`, error);
+    throw error;
+  }
+},
+generateLCReport: async (lcNumber) => {
+  try {
+    const response = await axiosInstance.get(`/admin/lc/report?lc_no=${lcNumber}`);
+    return response.data; // Should return { url: "pdf_url" }
+  } catch (error) {
+    console.error(`Error generating report for ${lcNumber}:`, error);
+    throw error;
+  }
+},
 };
 
 export default lcService;

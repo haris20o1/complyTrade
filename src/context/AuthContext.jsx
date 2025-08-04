@@ -51,7 +51,7 @@
 // src/contexts/AuthContext.js
 // src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { validateToken, getUserRole } from '../components/authentication/auth';
+import { validateToken, getUserRole, getUserInfo } from '../components/authentication/auth';
 
 // Create context
 const AuthContext = createContext();
@@ -60,6 +60,8 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null); // ADD: Store user ID
+  const [userInfo, setUserInfo] = useState(null); // ADD: Store complete user info
   const [isLoading, setIsLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -67,6 +69,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     checkAuthStatus();
   }, []);
+
+  
 
   const checkAuthStatus = async () => {
     console.log('=== AUTH CONTEXT: Checking auth status ===');
@@ -82,6 +86,8 @@ export const AuthProvider = ({ children }) => {
         console.log('No token found, user is not authenticated');
         setIsAuthenticated(false);
         setUserRole(null);
+        setUserId(null);
+        setUserInfo(null);
         return;
       }
 
@@ -90,24 +96,34 @@ export const AuthProvider = ({ children }) => {
       console.log('Token validation result:', isValid);
       
       if (isValid) {
-        // Get user role from the backend
-        const role = await getUserRole();
-        console.log('Role received:', role);
+        // Get complete user info from the backend
+        const userInfoData = await getUserInfo();
+        console.log('User info received:', userInfoData);
         
-        if (role) {
+        if (userInfoData) {
+          // Extract role and user ID from user info
+          const role = userInfoData.role || userInfoData.user_role || userInfoData.userRole;
+          const id = userInfoData.id || userInfoData.user_id || userInfoData.userId;
+          
           // Update state synchronously
           setIsAuthenticated(true);
           setUserRole(role);
-          console.log('User role set in context:', role);
+          setUserId(id);
+          setUserInfo(userInfoData);
+          console.log('User data set in context:', { role, id, userInfo: userInfoData });
         } else {
-          console.log('No role received, clearing auth state');
+          console.log('No user info received, clearing auth state');
           setIsAuthenticated(false);
           setUserRole(null);
+          setUserId(null);
+          setUserInfo(null);
         }
       } else {
         console.log('Token invalid, clearing auth state');
         setIsAuthenticated(false);
         setUserRole(null);
+        setUserId(null);
+        setUserInfo(null);
         // Clear invalid token
         localStorage.removeItem('access_token');
         localStorage.removeItem('token_type');
@@ -116,6 +132,8 @@ export const AuthProvider = ({ children }) => {
       console.error('Auth check failed:', error);
       setIsAuthenticated(false);
       setUserRole(null);
+      setUserId(null);
+      setUserInfo(null);
     } finally {
       setIsLoading(false);
       setAuthChecked(true);
@@ -133,19 +151,26 @@ export const AuthProvider = ({ children }) => {
       console.log('Login validation result:', isValid);
       
       if (isValid) {
-        const role = await getUserRole();
-        console.log('Login role result:', role);
+        // Get complete user info instead of just role
+        const userInfoData = await getUserInfo();
+        console.log('Login user info result:', userInfoData);
         
-        if (role) {
+        if (userInfoData) {
+          const role = userInfoData.role || userInfoData.user_role || userInfoData.userRole;
+          const id = userInfoData.id || userInfoData.user_id || userInfoData.userId;
+          
           // CRITICAL: Update all state synchronously
           setIsAuthenticated(true);
           setUserRole(role);
+          setUserId(id);
+          setUserInfo(userInfoData);
           setIsLoading(false);
           setAuthChecked(true);
           
           console.log('Login successful - State updated:', {
             isAuthenticated: true,
             userRole: role,
+            userId: id,
             isLoading: false,
             authChecked: true
           });
@@ -155,7 +180,7 @@ export const AuthProvider = ({ children }) => {
           
           return role;
         } else {
-          throw new Error('No role received from server');
+          throw new Error('No user info received from server');
         }
       } else {
         throw new Error('Token validation failed');
@@ -164,6 +189,8 @@ export const AuthProvider = ({ children }) => {
       console.error('Login state update failed:', error);
       setIsAuthenticated(false);
       setUserRole(null);
+      setUserId(null);
+      setUserInfo(null);
       setIsLoading(false);
       setAuthChecked(true);
       return null;
@@ -175,6 +202,8 @@ export const AuthProvider = ({ children }) => {
     console.log('=== AUTH CONTEXT: Logging out ===');
     setIsAuthenticated(false);
     setUserRole(null);
+    setUserId(null);
+    setUserInfo(null);
     setIsLoading(false);
     setAuthChecked(true);
     localStorage.removeItem('access_token');
@@ -196,6 +225,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     isAuthenticated,    
     userRole,
+    userId,          // ADD: Expose user ID
+    userInfo,        // ADD: Expose complete user info
     isLoading,
     authChecked,
     login,
@@ -204,9 +235,10 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus
   };
 
-  console.log('AuthContext current state:', {
+  console.log('AuthContext current stateeeeeeee:', {
     isAuthenticated,
     userRole,
+    userId,
     isLoading,
     authChecked
   });
@@ -226,5 +258,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-

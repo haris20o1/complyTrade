@@ -155,7 +155,7 @@ const CompletedLCs = () => {
         )}
 
         {/* Error State */}
-        {error && !loading && (
+        {/* {error && !loading && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 my-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -174,7 +174,7 @@ const CompletedLCs = () => {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Main Content - Only show when not loading */}
         {!loading && (
@@ -201,7 +201,7 @@ const CompletedLCs = () => {
               </div>
 
               {/* No Data State */}
-              {completedLCs.length === 0 && !error ? (
+              {completedLCs.length === 0 ? (
                 <div className="p-12 text-center">
                   <div className="mx-auto h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                     <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

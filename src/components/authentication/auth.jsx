@@ -144,7 +144,7 @@ export const validateToken = async () => {
     const response = await axiosInstance.get('/authenticate/verify');
     
     console.log('Validation response status:', response.status);
-    console.log('Validation response data:', response.data);
+    console.log('Validation response dataaaaa:', response.data);
     
     const isValid = response.status === 200;
     console.log('Token is valid:', isValid);

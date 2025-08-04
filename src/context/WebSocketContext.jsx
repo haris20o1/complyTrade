@@ -10,7 +10,7 @@ const createWebSocketConnection = (token) => {
     return null;
   }
 
-  const socket = new WebSocket(`wss://192.168.18.152:50013/ws/notifications?token=${token}`);
+  const socket = new WebSocket(`wss://192.168.18.132:50013/ws/notifications?token=${token}`);
   
   return socket;
 };
@@ -135,7 +135,7 @@ export const WebSocketProvider = ({ children }) => {
       console.warn('WebSocket not connected, cannot send message:', message);
       return false;
     }
-
+  
     try {
       const messageToSend = typeof message === 'string' ? message : JSON.stringify(message);
       socket.send(messageToSend);

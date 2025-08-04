@@ -111,7 +111,7 @@
 //           <Route path="/" element={<LoginScreen />} />
 //           <Route path="/signup" element={<SignupScreen />} />
 //         </Route>
-        
+
 //         {/* Protected routes (require authentication) */}
 //         <Route element={<ProtectedRoute />}>
 //           {/* Admin routes */}
@@ -123,19 +123,19 @@
 //             <Route path="/timeline" element={<LCTimelinePage />} />
 //             <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
 //           </Route>
-          
+
 //           {/* Compliance Manager routes */}
 //           <Route element={<RoleBasedRoute allowedRoles={['complyce_manager']} />}>
 //             <Route path="/dashboardd" element={<ManagerDashboard />} />
 //             <Route path="/complete" element={<CompletedLCs />} />
 //             <Route path="/discrepency/:lcNumber" element={<Discrepancy />} />
 //           </Route>
-          
+
 //           {/* SWIFT User routes */}
 //           <Route element={<RoleBasedRoute allowedRoles={['swift']} />}>
 //             <Route path="/swift-upload" element={<SwiftUploadPanel />} />
 //           </Route>
-          
+
 //           {/* Support User routes */}
 //           <Route element={<RoleBasedRoute allowedRoles={['support']} />}>
 //             <Route path="/supporting-docs" element={<LCSupportingDocsUploader />} />
@@ -152,11 +152,11 @@
 //             <Route path="/userperformance" element={<UserPerformanceDashboard />} />
 //           </Route>
 //         </Route>
-        
+
 //         {/* Unauthorized access page */}
 //         <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        
+
 //         {/* Catch all - redirect to login or dashboard based on auth status */}
 //         <Route path="*" element={<Navigate to="/" replace />} />
 //       </Routes>
@@ -288,83 +288,103 @@ import SuperAdminAudits from "./components/SuperAdmin/SuperAdminDashboard";
 import UserPerformanceDashboard from "./components/SuperAdmin/UserPerformance";
 import { AuthProvider } from "./context/AuthContext";
 import VesselTrackingPage from "./components/vesselTracking/vesselTrack";
-import VesselTrackingPage2 from "./components/vesselTracking/vesselTrack2";
+// import VesselTrackingPage2 from "./components/vesselTracking/vesselTrack2";
 import { WebSocketProvider } from "./context/WebSocketContext";
+import LCPDFViewer from "./components/admin/LCPDFViewer";
+import ICStatusOverview from "./components/SuperAdmin/LCstats";
+import Settings from "./components/setting/settings";
+// import { Settings } from "lucide-react";
+
 
 function App() {
   return (
     <AuthProvider>
       <WebSocketProvider>
-      <Router>
-        <Routes>
-          {/* Public routes that redirect logged-in users */}
-          <Route element={<AuthRedirectRoute />}>
-            <Route path="/" element={<LoginScreen />} />
-            <Route path="/signup" element={<SignupScreen />} />
-          </Route>
-          
-          {/* Protected routes (require authentication) */}
-          <Route element={<ProtectedRoute />}>
-            {/* Admin routes */}
-            <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
-              <Route path="/dashboard" element={<Admin1 />} />
-              <Route path="/uploaded" element={<UploadedLCPage />} />
-              <Route path="/assigned" element={<AssignedLCPage />} />
-              <Route path="/completed" element={<CompletedLCPage />} />
-              <Route path="/timeline" element={<LCTimelinePage />} />
-              {/* <Route path="/discrepencies/:lcNumber" element={<LCDetails />} /> */}
-              <Route path="/vesseltracking" element={<VesselTrackingPage />} />
+        <Router>
+          <Routes>
+            {/* Public routes that redirect logged-in users */}
+            <Route element={<AuthRedirectRoute />}>
+              <Route path="/" element={<LoginScreen />} />
+              <Route path="/signup" element={<SignupScreen />} />
             </Route>
-            
 
-            <Route element={<RoleBasedRoute allowedRoles={['admin', 'complyce_manager']} />}>
-            
-              <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
-           
+            {/* Protected routes (require authentication) */}
+            <Route element={<ProtectedRoute />}>
+              {/* Admin routes */}
+              <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                <Route path="/dashboard" element={<Admin1 />} />
+                <Route path="/uploaded" element={<UploadedLCPage />} />
+                <Route path="/assigned" element={<AssignedLCPage />} />
+                <Route path="/completed" element={<CompletedLCPage />} />
+                <Route path="/timeline" element={<LCTimelinePage />} />
+                {/* <Route path="/discrepencies/:lcNumber" element={<LCDetails />} /> */}
+                {/* <Route path="/vesseltracking" element={<VesselTrackingPage />} /> */}
+                {/* <Route path="/lc-pdf-viewer/:lcNumber" element={<LCPDFViewer />} /> */}
+              </Route>
+
+
+              {/* <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
+              </Route> */}
+
+              <Route element={<RoleBasedRoute allowedRoles={['complyce_manager', 'admin']} />}>
+                <Route path="/discrepencies/:lcNumber" element={<LCDetails />} />
+                <Route path="/lc-pdf-viewer/:lcNumber" element={<LCPDFViewer />} />
+                <Route path="/vesseltracking" element={<VesselTrackingPage />} />
+                {/* <Route path="/settings" element={<Settings />} /> */}
+
+              </Route>
+
+              <Route element={<RoleBasedRoute allowedRoles={['complyce_manager', 'admin', 'it_admin', 'super_admin']} />}>
+    
+                <Route path="/settings" element={<Settings />} />
+
+              </Route>
+
+              {/* Compliance Manager routes */}
+              <Route element={<RoleBasedRoute allowedRoles={['complyce_manager']} />}>
+                <Route path="/dashboardd" element={<ManagerDashboard />} />
+                <Route path="/complete" element={<CompletedLCs />} />
+                {/* <Route path="/vessel-tracking" element={<VesselTrackingPage2 />} /> */}
+              </Route>
+
+              {/* SWIFT User routes */}
+              <Route element={<RoleBasedRoute allowedRoles={['swift_manager']} />}>
+                <Route path="/swift-upload" element={<SwiftUploadPanel />} />
+              </Route>
+
+              {/* Support User routes */}
+              <Route element={<RoleBasedRoute allowedRoles={['support_doc_manager']} />}>
+                <Route path="/supporting-docs" element={<LCSupportingDocsUploader />} />
+              </Route>
+
+              {/* IT manager User routes */}
+              <Route element={<RoleBasedRoute allowedRoles={['it_admin']} />}>
+                <Route path="/users" element={<UserManagement />} />
+                <Route path="/policies" element={<BankPolicyUploadPage />} />
+                <Route path="/audit" element={<RequestAuditPage />} />
+              </Route>
+
+              {/* Super Admin User routes */}
+              <Route element={<RoleBasedRoute allowedRoles={['super_admin']} />}>
+                <Route path="/super" element={<SuperAdminAudits />} />
+                <Route path="/userperformance" element={<UserPerformanceDashboard />} />
+                <Route path="/lcstats" element={<ICStatusOverview />} />
+              </Route>
+
+              {/* Shared routes for multiple roles */}
+              <Route element={<RoleBasedRoute allowedRoles={['admin', 'it_admin', 'complyce_manager', 'super_admin']} />}>
+                <Route path="/settings" element={<div>Settings Page</div>} />
+              </Route>
             </Route>
-            {/* Compliance Manager routes */}
-            <Route element={<RoleBasedRoute allowedRoles={['complyce_manager']} />}>
-              <Route path="/dashboardd" element={<ManagerDashboard />} />
-              <Route path="/complete" element={<CompletedLCs />} />
-              <Route path="/vessel-tracking" element={<VesselTrackingPage2 />} />
-            </Route>
-            
-            {/* SWIFT User routes */}
-            <Route element={<RoleBasedRoute allowedRoles={['swift']} />}>
-              <Route path="/swift-upload" element={<SwiftUploadPanel />} />
-            </Route>
-            
-            {/* Support User routes */}
-            <Route element={<RoleBasedRoute allowedRoles={['support']} />}>
-              <Route path="/supporting-docs" element={<LCSupportingDocsUploader />} />
-            </Route>
-            
-            {/* IT manager User routes */}
-            <Route element={<RoleBasedRoute allowedRoles={['it_admin']} />}>
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/policies" element={<BankPolicyUploadPage />} />
-              <Route path="/audit" element={<RequestAuditPage />} />
-            </Route>
-            
-            {/* Super Admin User routes */}
-            <Route element={<RoleBasedRoute allowedRoles={['super_admin']} />}>
-              <Route path="/super" element={<SuperAdminAudits />} />
-              <Route path="/userperformance" element={<UserPerformanceDashboard />} />
-            </Route>
-            
-            {/* Shared routes for multiple roles */}
-            <Route element={<RoleBasedRoute allowedRoles={['admin','it_admin','complyce_manager','super_admin']} />}>
-              <Route path="/settings" element={<div>Settings Page</div>} />
-            </Route>
-          </Route>
-          
-          {/* Unauthorized access page */}
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
-          
-          {/* Catch all - redirect to login or dashboard based on auth status */}
-          <Route path="*" element={<h1>Page not found </h1>} />
-        </Routes>
-      </Router>
+
+            {/* Unauthorized access page */}
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+            {/* Catch all - redirect to login or dashboard based on auth status */}
+            <Route path="*" element={<h1>Page not found </h1>} />
+          </Routes>
+        </Router>
       </WebSocketProvider>
     </AuthProvider>
   );

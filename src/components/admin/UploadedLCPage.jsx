@@ -961,11 +961,11 @@ const UploadedLCPage = () => {
       } catch (err) {
         console.error('Failed to fetch users:', err);
         // Set default users in case of API failure
-        setUsers([
-          { id: 2, name: 'ali', role: 'user' },
-          { id: 44, name: 'noor', role: 'user' },
-          { id: 45, name: 'fazal', role: 'user' }
-        ]);
+        // setUsers([
+        //   { id: 2, name: 'ali', role: 'user' },
+        //   { id: 44, name: 'noor', role: 'user' },
+        //   { id: 45, name: 'fazal', role: 'user' }
+        // ]);
       } finally {
         setUserLoading(false);
       }
@@ -1014,7 +1014,7 @@ const UploadedLCPage = () => {
         setError(null);
       } catch (err) {
         console.error('Failed to fetch LCs:', err);
-        setError('Failed to load data. Please try again later.');
+        setError('No LC data found ');
       } finally {
         setLoading(false);
       }
@@ -1036,27 +1036,18 @@ const UploadedLCPage = () => {
     try {
       setDownloading(true);
 
-      // Get the document URL from the API
-      const response = await lcService.downloadLCDocument(lcNumber);
+      // Instead of opening PDF directly, open the new PDF viewer page
+      const pdfViewerUrl = `/lc-pdf-viewer/${encodeURIComponent(lcNumber)}`;
+      window.open(pdfViewerUrl, '_blank');
 
-      if (!response || !response.url) {
-        console.warn('No document URL returned from API');
-        alert('Document not available');
-        setDownloading(false);
-        return;
-      }
-
-      // Open the PDF in a new tab
-      window.open(response.url, '_blank');
-      console.log(`Opened document for ${lcNumber} in new tab`);
+      console.log(`Opened PDF viewer for ${lcNumber} in new tab`);
     } catch (err) {
-      console.error(`Failed to open document for ${lcNumber}:`, err);
-      alert('Failed to open document. Please try again later.');
+      console.error(`Failed to open PDF viewer for ${lcNumber}:`, err);
+      alert('Failed to open PDF viewer. Please try again later.');
     } finally {
       setDownloading(false);
     }
   };
-
   // Filter configuration
   const filterOptions = [
     {
@@ -1131,18 +1122,18 @@ const UploadedLCPage = () => {
     try {
       const lc = uploadedLCs.find(lc => lc.id === lcId);
       const user = selectedUsers[lcId];
-  
+
       if (!lc || !user) return;
-  
+
       // Pre-validation: Check if trying to assign to the same user
       if (lc.assignedTo?.id === user.id) {
         alert(`LC ${lc.lcNumber} is already assigned to ${user.name}. Please select a different user to reassign.`);
         return;
       }
-  
+
       // Call API to reassign LC
       await lcService.assignLC(lc.lcNumber, user.id);
-  
+
       // Update local state to reflect reassignment
       setUploadedLCs(uploadedLCs.map(item => {
         if (item.id === lcId) {
@@ -1154,28 +1145,28 @@ const UploadedLCPage = () => {
         }
         return item;
       }));
-  
+
       // Clear the selected user for this LC
       setSelectedUsers(prev => {
         const updated = { ...prev };
         delete updated[lcId];
         return updated;
       });
-  
+
       console.log(`Reassigned LC ${lc.lcNumber} to user ${user.name}`);
-  
+
       // Show success message
       alert(`LC ${lc.lcNumber} has been successfully reassigned to ${user.name}`);
-  
+
       // Refresh data after reassignment to ensure consistency
       refreshData();
     } catch (err) {
       console.error('Failed to reassign LC:', err);
-      
+
       // Check for specific error types
       if (err.response?.status === 400) {
         const errorDetail = err.response?.data?.detail || '';
-        
+
         if (errorDetail.includes('LC already assigned to this user')) {
           alert(`LC ${lc?.lcNumber || 'this LC'} is already assigned to ${user?.name || 'this user'}. Please select a different user.`);
         } else if (errorDetail.includes('already assigned')) {
@@ -1194,7 +1185,7 @@ const UploadedLCPage = () => {
       }
     }
   };
-  
+
   // Also update the handleReassign function to clear any previous selection
   const handleReassign = (lcId) => {
     // Clear any previous user selection for this LC
@@ -1203,7 +1194,7 @@ const UploadedLCPage = () => {
       delete updated[lcId];
       return updated;
     });
-  
+
     // Update LC status to show reassignment UI
     setUploadedLCs(uploadedLCs.map(item => {
       if (item.id === lcId) {
@@ -1215,13 +1206,13 @@ const UploadedLCPage = () => {
 
   const handleUserSelection = (lcId, selectedUser) => {
     const lc = uploadedLCs.find(lc => lc.id === lcId);
-    
+
     // Check if the selected user is the same as currently assigned user
     if (lc?.assignedTo?.id === selectedUser.id) {
       alert(`This LC is already assigned to ${selectedUser.name}. Please select a different user.`);
       return;
     }
-    
+
     // Update selected users if different user is selected
     setSelectedUsers(prev => ({
       ...prev,
@@ -1417,6 +1408,7 @@ const UploadedLCPage = () => {
           {row.status}
           {row.assignedTo && row.status === 'Assigned' && (
             <div className="text-xs text-gray-500 mt-1">
+              {/* Assigned to: {row.assignedTo.name} */}
               Assigned to: {row.assignedTo.name}
             </div>
           )}
@@ -1438,8 +1430,14 @@ const UploadedLCPage = () => {
 
         // Handle regular assignment flow for uploaded documents
         return row.status === 'Assigned' ? (
-          <div className="text-sm text-gray-500">
-            Already assigned to {row.assignedTo.name}
+
+          <div className="flex items-center text-sm text-gray-500">
+            <img
+              src={`https://ui-avatars.com/api/?name=${row.assignedTo.name.replace(' ', '+')}`}
+              alt={row.assignedTo.name}
+              className="h-6 w-6 rounded-full mr-2"
+            />
+            {row.assignedTo.name}
           </div>
         ) : (
           <UserDropdown
@@ -1509,12 +1507,12 @@ const UploadedLCPage = () => {
             size="sm"
             onClick={() => handleConfirmReassign(row.id)}
             disabled={
-              !selectedUsers[row.id] || 
+              !selectedUsers[row.id] ||
               selectedUsers[row.id]?.id === row.assignedTo?.id
             }
             title={
-              selectedUsers[row.id]?.id === row.assignedTo?.id 
-                ? "Please select a different user" 
+              selectedUsers[row.id]?.id === row.assignedTo?.id
+                ? "Please select a different user"
                 : ""
             }
           >
@@ -1660,7 +1658,9 @@ const UploadedLCPage = () => {
             <div className="text-gray-500">Loading data...</div>
           </div>
         ) : error ? (
-          <div className="text-red-500 p-4 text-center">{error}</div>
+          <div className="bg-gray-50 border border-gray-300 text-gray-600 text-sm px-4 py-3 rounded-md text-center shadow-sm">
+            {error}
+          </div>
         ) : (
           <DataTable
             columns={columns}

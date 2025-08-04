@@ -1,12 +1,17 @@
 import React from 'react';
 
-const DocumentHeader = ({ mainPoint }) => {
+const DocumentHeader = ({ mainPoint, onDocumentClick }) => {
   return (
     <div className="mb-6 bg-white rounded-2xl shadow-lg overflow-hidden border-l-4 border-[#343de7]">
       <div className="p-5 bg-gradient-to-r from-white to-[#3d43a8] border border-gray-300 shadow-2xl rounded-lg">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{mainPoint.text}</h2>
+            <h2 
+              className="text-xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200"
+              onClick={() => onDocumentClick(mainPoint.doc_uuid)}
+            >
+              {mainPoint.text}
+            </h2>
             <p className="text-sm text-gray-600 mt-1">
               {mainPoint.subPoints.length} {mainPoint.subPoints.length === 1 ? 'issue' : 'issues'} identified
             </p>

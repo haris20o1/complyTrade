@@ -2,7 +2,7 @@
 
 // // Create axios instance with base configuration
 // export const axiosInstance = axios.create({
-//   baseURL: 'https://192.168.18.152:50013',
+//   baseURL: 'https://192.168.18.132:50013',
 //   headers: {
 //     'Content-Type': 'application/json',
 //   }
@@ -153,30 +153,31 @@
 // };
 
 // export default { axiosInstance, userService, lcService, auditService };
+import { axiosInstance } from './axios';
 
-import axios from 'axios';
+// import axios from 'axios';
 
 // Create axios instance with base configuration
-export const axiosInstance = axios.create({
-  baseURL: 'https://192.168.18.152:50013',
-  headers: {
-    'Content-Type': 'application/json',
-  }
-});
+// export const axiosInstance = axios.create({
+//   baseURL: 'https://192.168.18.132:50013',
+//   headers: {
+//     'Content-Type': 'application/json',
+//   }
+// });
 
 // Add request interceptor to include auth token
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// axiosInstance.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem('access_token');
+//     if (token) {
+//       config.headers['Authorization'] = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => {
+//     return Promise.reject(error);
+//   }
+// );
 
 // User management API service
 export const userService = {

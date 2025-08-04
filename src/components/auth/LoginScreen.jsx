@@ -9,7 +9,7 @@ import { useWebSocket } from '../../context/WebSocketContext';
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+
   const [credentials, setCredentials] = useState({
     username: '',
     password: ''
@@ -18,7 +18,7 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const {connect} =useWebSocket();
+  const { connect } = useWebSocket();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,10 +32,10 @@ const LoginScreen = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       console.log('Starting login process...');
-      
+
       // Login user - this stores the token
       const authData = await loginUser(credentials.username, credentials.password);
       console.log('Login successful, token stored');
@@ -43,36 +43,36 @@ const LoginScreen = () => {
 
       connect();
 
-    
+
       // Connect to WebSocket
       // connectWebSocket();
-      
+
 
       // Check if password change is required
       // if (authData.password_expired || authData.requirePasswordChange) {
       //   navigate('/change-password');
       //   return;
       // }
-      
+
       // CRITICAL FIX: Update the AuthContext state and get the role
       console.log('Updating auth context...');
       const userRole = await login();
       console.log('Role received from context update:', userRole);
-      
+
       if (userRole) {
         console.log('Login successful, navigating based on role:', userRole);
-        
+
         // CRITICAL FIX: Use a small delay to ensure state updates are processed
         // This prevents the AuthRedirectRoute from interfering
         setTimeout(() => {
-          switch(userRole) {
+          switch (userRole) {
             case 'admin':
               navigate('/dashboard', { replace: true });
               break;
-            case 'support':
+            case 'support_doc_manager':
               navigate('/supporting-docs', { replace: true });
               break;
-            case 'swift':
+            case 'swift_manager':
               navigate('/swift-upload', { replace: true });
               break;
             case 'complyce_manager':
@@ -82,19 +82,19 @@ const LoginScreen = () => {
               navigate('/users', { replace: true });
               break;
             case 'super_admin':
-              navigate('/super', { replace: true });
+              navigate('/lcstats', { replace: true });
               break;
             default:
               console.log('Unknown role, redirecting to root');
               navigate('/', { replace: true });
           }
         }, 100); // Small delay to ensure state updates are processed
-        
+
       } else {
         setError('Failed to retrieve user role. Please try again.');
         setLoading(false);
       }
-      
+
     } catch (err) {
       console.error('Login error:', err);
       setError('Authentication failed. Please check your credentials and try again.');
@@ -108,36 +108,57 @@ const LoginScreen = () => {
       <div className="fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-800 h-16 flex items-center px-6 z-10">
         <div className="flex items-center">
           {/* Use a simple div if the BuildingLibraryIcon isn't available */}
-          <div className="h-8 w-8 bg-blue-500 rounded flex items-center justify-center text-white">LC</div>
-          <span className="ml-3 text-white font-semibold tracking-wide">LC COMPLIANCE</span>
+          <div className="h-8 w-8 bg-blue-500 rounded flex items-center justify-center text-white">CT</div>
+          <span className="ml-3 text-white font-semibold tracking-wide">Comply Trade</span>
         </div>
+        {/* <div className="flex items-center">
+          <img
+             src="/images/logo%20lc.png" 
+            alt="Comply Trade Logo"
+            className="h-8 w-8 rounded object-cover"
+          />
+          <span className="ml-3 text-white font-semibold tracking-wide">Comply Trade</span>
+        </div> */}
         <div className="ml-auto text-gray-400 text-sm">
           <span>Enterprise Banking Suite</span>
         </div>
       </div>
-      
+
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-16">
         <div className="w-full max-w-md">
           {/* Security Badge */}
-          <div className="mb-6 flex justify-center">
-            <div className="bg-blue-900 bg-opacity-40 rounded-full p-3 border border-blue-700 shadow-lg">
-              {/* Fallback for ShieldCheckIcon */}
-              <svg className="h-10 w-10 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* <div className="mb-6 flex justify-center">
+            <div className="bg-white rounded-full p-3 border border-blue-700 shadow-lg">            
+              <img
+                src="/images/logo%20lc.png"
+                alt="Comply Trade Logo"
+                className="h-10 w-10 rounded object-cover"
+              /> */}
+              {/* <svg className="h-10 w-10 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-5.618 1.04M12 2.944a11.955 11.955 0 01-5.618 1.04l-1.5-1.5A11.955 11.955 0 0112 2.944m-9 9.5v9.5m9-9a9 9 0 0110 9m-9 .5h9a9.5 9.5 0 01-9 9" />
-              </svg>
+              </svg> */}
+            {/* </div>
+          </div> */}
+          <div className="mb-6 flex justify-center">
+            <div className="bg-white rounded-full p-3 border border-blue-700 shadow-lg">
+              <img
+                src="/images/logo%20lc.png"
+                alt="Comply Trade Logo"
+                className="h-16 w-16 object-contain"
+              />
             </div>
           </div>
-          
+
           {/* Main Card */}
           <div className="bg-gray-800 rounded-lg shadow-2xl overflow-hidden border border-gray-700">
             <div className="bg-blue-900 py-5 px-6 border-b border-gray-700">
               <div className="text-center">
-                <h2 className="text-xl font-bold text-white tracking-wider">LC COMPLIANCE SYSTEM</h2>
+                <h2 className="text-xl font-bold text-white tracking-wider">Comply Trade</h2>
                 <div className="mt-1 h-px w-24 bg-blue-500 mx-auto"></div>
-                <p className="text-blue-300 text-sm mt-1">Secure Document Management</p>
+                <p className="text-blue-300 text-sm mt-1">LC COMPLIANCE SYSTEM</p>
               </div>
             </div>
-            
+
             <div className="p-8">
               {error && (
                 <div className="mb-6 bg-red-900 bg-opacity-20 border-l-4 border-red-600 p-4 rounded">
@@ -234,9 +255,8 @@ const LoginScreen = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                      loading ? 'bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
-                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800`}
+                    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${loading ? 'bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'
+                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800`}
                   >
                     {loading ? (
                       <>
@@ -247,7 +267,7 @@ const LoginScreen = () => {
                         Signing in...
                       </>
                     ) : (
-                      'Secure Login'
+                      'Login'
                     )}
                   </button>
                 </div>
@@ -266,27 +286,27 @@ const LoginScreen = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-gray-900 px-6 py-4 border-t border-gray-800">
               <div className="flex flex-col items-center text-center">
                 <p className="text-xs text-gray-500 mb-1">
                   LC Compliance System © 2025. All rights reserved.
                 </p>
-                <div className="flex space-x-3 text-xs text-gray-600 mt-1">
+                {/* <div className="flex space-x-3 text-xs text-gray-600 mt-1">
                   <span>Terms</span>
                   <span>•</span>
                   <span>Privacy</span>
                   <span>•</span>
                   <span>Security</span>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
-          
+
           {/* Session information */}
-          <div className="mt-6 text-center text-xs text-gray-500">
+          {/* <div className="mt-6 text-center text-xs text-gray-500">
             <p>Last login: 03/12/2025 09:45 AM • IP: 192.168.1.*** • <span className="text-blue-400">Report suspicious activity</span></p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

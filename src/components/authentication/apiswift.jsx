@@ -42,6 +42,15 @@ export const createProgressWebSocket = (sessionId) => {
     throw new Error('Authentication token not found');
   }
   
-  const wsUrl = `wss://192.168.18.152:50013/lc/ws/progress/${sessionId}?token=${encodeURIComponent(token)}`;
+  const wsUrl = `wss://192.168.18.132:50013/lc/ws/progress/${sessionId}?token=${encodeURIComponent(token)}`;
   return new WebSocket(wsUrl);
+};
+export const cancelUploadSession = async (sessionId) => {
+  try {
+    const response = await axiosInstance.post(`/supporting_docs/session/${sessionId}/cancel`);
+    return response.data;
+  } catch (error) {
+    console.error('Cancel session error:', error);
+    throw error;
+  }
 };
