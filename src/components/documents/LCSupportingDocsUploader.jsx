@@ -1243,7 +1243,7 @@
 //               <p className="text-xs text-gray-400">Professional Document Management</p>
 //             </div>
 //           </div>
-          
+
 //           <button
 //             onClick={handleSignOut}
 //             className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
@@ -1269,11 +1269,11 @@
 
 //       {/* Main Layout */}
 //       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-        
+
 //         {/* Main Upload Panel */}
 //         <div className="lg:col-span-3">
 //           <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 overflow-hidden">
-            
+
 //             {/* LC Number Section */}
 //             <div className="p-6 border-b border-gray-700/50">
 //               <div className="flex items-center space-x-2 mb-4">
@@ -1304,7 +1304,7 @@
 //                       ${uploading || lcValidating ? 'opacity-50 cursor-not-allowed' : ''}
 //                       focus:outline-none focus:ring-2 placeholder-gray-500`}
 //                   />
-                  
+
 //                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
 //                     {lcValidating && (
 //                       <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
@@ -1369,7 +1369,7 @@
 //                       onChange={(e) => handleFilesSelected(Array.from(e.target.files))}
 //                       disabled={uploading}
 //                     />
-                    
+
 //                     <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
 //                       <Upload className="h-6 w-6 text-white" />
 //                     </div>
@@ -1385,7 +1385,7 @@
 //                       <FileText className="h-4 w-4 text-cyan-400" />
 //                       <span>Selected Documents ({files.length})</span>
 //                     </h5>
-                    
+
 //                     <div className="max-h-32 overflow-y-auto space-y-1.5 pr-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
 //                       {files.slice(0, 4).map((file, index) => (
 //                         <div key={`${file.name}_${index}`} className="group flex items-center justify-between p-2 bg-gray-700/30 border border-gray-600/50 rounded-lg hover:bg-gray-700/50 transition-all duration-200">
@@ -1728,28 +1728,35 @@ const LCSupportingDocsUploader = () => {
   //   setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   // };
   const removeFile = (indexToRemove) => {
-  setFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
-};
+    setFiles(prevFiles => prevFiles.filter((_, index) => index !== indexToRemove));
+  };
 
   // WebSocket processing response handler
 
-// Smooth progress simulation timer
-const progressTimerRef = useRef(null);
+  // Smooth progress simulation timer
+  const progressTimerRef = useRef(null);
 
 
-// Updated WebSocket processing response handler with accurate progress calculation
+  // Updated WebSocket processing response handler with accurate progress calculation
+ // Updated WebSocket processing response handler with correct data structure handling
+// Updated WebSocket processing response handler with correct data structure handling
 const handleProcessingResponse = (data) => {
   console.log('WebSocket response:', data);
 
-  // Handle the new API response format
-  if (data.progress !== undefined && data.status && data.lc_no) {
-    const progress = data.progress;
+  // Handle the actual API response format from your logs
+  if (data.session_id && data.lc_no && data.status) {
     const status = data.status;
-    const processed = data.processed || 0;
-    const lastUpdate = data.last_update;
+    const totalFiles = data.total_files || 0; // Total documents extracted from all uploaded files
+    const completedFiles = data.completed_files || 0; // Files uploaded (not documents)
+    const processedDocs = data.processed_docs || 0; // Individual documents processed
+    const overallProgress = data.overall_progress || 0;
+    const currentProgress = data.current_progress || null;
 
-    // Update PROCESSING progress bar with exact API progress
-    setProcessingProgress(progress);
+    // Calculate progress percentage based on processed documents vs total documents
+    const progressPercentage = totalFiles > 0 ? Math.round((processedDocs / totalFiles) * 100) : 0;
+    
+    // Update PROCESSING progress bar with calculated progress
+    setProcessingProgress(progressPercentage);
 
     // Handle different status states
     switch (status) {
@@ -1761,37 +1768,42 @@ const handleProcessingResponse = (data) => {
       case 'in-progress':
         setProcessingStatus('in-progress');
 
-        // Show processing details if available
-        if (lastUpdate && lastUpdate.doc_path) {
-          const docTitle = lastUpdate.doc_title || lastUpdate.doc_name || `Document ${processed}`;
-          setCurrentDocName(`Processing: ${docTitle} (${processed} completed)`);
+        // Show processing details from current_progress
+        if (currentProgress && currentProgress.doc_title) {
+          const docTitle = currentProgress.doc_title;
+          const docStatus = currentProgress.status || 'processing';
+          setCurrentDocName(`Processing: ${docTitle} (${processedDocs} documents completed)`);
+          
+          // Add completed document to processed files list
+          if (docStatus === 'completed' && currentProgress.doc_path) {
+            setProcessedFiles(prevFiles => {
+              const docPath = currentProgress.doc_path;
+              const fileExists = prevFiles.some(file => file.path === docPath);
+
+              if (!fileExists) {
+                return [...prevFiles, {
+                  name: docTitle,
+                  status: 'completed',
+                  path: docPath,
+                  error: null
+                }];
+              }
+              return prevFiles;
+            });
+          }
         } else {
-          setCurrentDocName(`Processing documents... (${processed} completed)`);
+          setCurrentDocName(`Processing documents... (${processedDocs}/${totalFiles} documents completed)`);
         }
 
-        // Update processed files list
-        if (lastUpdate && lastUpdate.status === 'completed' && processed > 0) {
-          setProcessedFiles(prevFiles => {
-            const docPath = lastUpdate.doc_path;
-            const fileExists = prevFiles.some(file => file.path === docPath);
-
-            if (!fileExists && docPath) {
-              return [...prevFiles, {
-                name: lastUpdate.doc_title || lastUpdate.doc_name || `Document ${processed}`,
-                status: lastUpdate.status,
-                path: docPath,
-                error: null
-              }];
-            }
-            return prevFiles;
-          });
-        }
+        // DO NOT auto-complete here - wait for explicit 'completed' status from server
+        // The server knows when all documents from all files are truly processed
         break;
 
       case 'completed':
+        // Only complete when server explicitly says so
         setProcessingStatus('completed');
-        setCurrentDocName('Processing complete');
-        setProcessingProgress(100); // Ensure processing reaches 100%
+        setCurrentDocName(`Processing complete - ${processedDocs} documents processed from ${files.length} uploaded files`);
+        setProcessingProgress(100);
 
         // Finalize the upload process
         setTimeout(() => {
@@ -1825,7 +1837,7 @@ const handleProcessingResponse = (data) => {
     return true;
   }
 
-  // Fallback for error handling
+  // Fallback for error handling (keeping your original error handling)
   if (data.error) {
     setErrors(prevErrors => [
       ...prevErrors,
@@ -1846,6 +1858,7 @@ const handleProcessingResponse = (data) => {
 
   return false;
 };
+
 
   // WebSocket monitoring function
   const startWebSocketMonitoring = (id) => {
@@ -1899,8 +1912,8 @@ const handleProcessingResponse = (data) => {
     }
   };
 
-// Updated handleUpload with immediate UI feedback
- const handleUpload = async () => {
+  // Updated handleUpload with immediate UI feedback
+  const handleUpload = async () => {
     if (!lcValidated) {
       const isValid = await handleLcValidation();
       if (!isValid) return;
@@ -2009,468 +2022,517 @@ const handleProcessingResponse = (data) => {
   };
 
 
-const resetUpload = async () => {
-  // If uploading is in progress, cancel the session
-  if (uploading && sessionId) {
-    try {
-      await cancelUploadSession(sessionId);
-      console.log('Upload session cancelled successfully');
-    } catch (error) {
-      console.error('Error cancelling session:', error);
-      // Continue with cleanup even if cancel fails
+  const resetUpload = async () => {
+    // If uploading is in progress, cancel the session
+    if (uploading && sessionId) {
+      try {
+        await cancelUploadSession(sessionId);
+        console.log('Upload session cancelled successfully');
+      } catch (error) {
+        console.error('Error cancelling session:', error);
+        // Continue with cleanup even if cancel fails
+      }
     }
-  }
 
-  cleanupWebSocket();
+    cleanupWebSocket();
 
-  setFiles([]);
-  setUploadStatus(null);
-  setErrorMessage('');
-  setErrors([]);
-  setUploadProgress(0);
-  setProcessingProgress(0);
-  setUploadComplete(false);
-  setUploading(false); // Add this to stop the uploading state
-  setSessionId('');
-  setProcessingStatus('');
-  setCurrentDocName('');
-  setUnsupportedFileError(null);
-  setProcessedFiles([]);
-};
+    setFiles([]);
+    setUploadStatus(null);
+    setErrorMessage('');
+    setErrors([]);
+    setUploadProgress(0);
+    setProcessingProgress(0);
+    setUploadComplete(false);
+    setUploading(false); // Add this to stop the uploading state
+    setSessionId('');
+    setProcessingStatus('');
+    setCurrentDocName('');
+    setUnsupportedFileError(null);
+    setProcessedFiles([]);
+  };
 
- return (
-  <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 flex flex-col">
-    {/* Header */}
-    <header className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700/50">
-      <div className="w-full px-8 xl:px-16">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
-              <FileText className="h-5 w-5 text-white" />
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 flex flex-col">
+      {/* Header */}
+      <header className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700/50">
+        <div className="w-full px-8 xl:px-16">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-3">
+              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-white">Comply Trade</h1>
+                <p className="text-xs text-gray-400">LC Document Portal</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-white">Comply Trade</h1>
-              <p className="text-xs text-gray-400">LC Document Portal</p>
-            </div>
+
+            <button
+              onClick={handleSignOut}
+              className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200 border border-white"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </button>
           </div>
-          
-          <button
-            onClick={handleSignOut}
-            className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200 border border-white"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </button>
         </div>
-      </div>
-    </header>
+      </header>
 
-    {/* Main Content */}
-    <main className="flex-1 w-full px-8 xl:px-16 py-5">  {/* reduced py from 8 to 4 */}
-  {/* Hero Section */}
-  <div className="text-center mb-6"> {/* reduced mb from 10 to 6 */}
-<h2 className="text-3xl font-sans font-medium text-white tracking-tight">
-  Upload LC Supporting Documents
-</h2>
-    <p className="text-gray-400 max-w-2xl mx-auto">
-      Securely manage your Letter of Credit documentation with enterprise-grade security
-    </p>
-  </div>
-
-      {/* Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-        
-        {/* Main Upload Panel */}
-        <div className="lg:col-span-3">
-          <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 overflow-hidden">
-            
-            {/* LC Number Section */}
-             <div className="p-6 border-b border-gray-700/50">
-  <div className="flex items-center space-x-2 mb-4">
-    <Shield className="h-4 w-4 text-blue-400" />
-    <h3 className="text-lg font-semibold text-white">LC Number Verification</h3>
-  </div>
-
-  <div className="flex items-start space-x-4">
-    {/* LC Number Input Section */}
-    <div className="flex-1 max-w-md">
-      <label htmlFor="lcNumber" className="block text-sm font-medium text-gray-300 mb-2">
-        Enter LC Number for Authentication
-      </label>
-      <div className="relative">
-        <input
-          type="text"
-          id="lcNumber"
-          value={lcNumber}
-          onChange={handleLcNumberChange}
-          onBlur={handleLcBlur}
-          disabled={uploading || lcValidating}
-          placeholder="LC-2024-XXXXXXXX"
-          className={`w-full px-4 py-3 rounded-lg border text-sm transition-all duration-200
-            ${lcValidationError 
-              ? 'border-red-500 bg-red-500/10 text-red-300 focus:ring-red-500/50' 
-              : lcValidated 
-                ? 'border-green-500 bg-green-500/10 text-green-300 focus:ring-green-500/50' 
-                : 'border-gray-600 bg-gray-700/50 text-white focus:ring-blue-500/50 focus:border-blue-500'
-            }
-            ${uploading || lcValidating ? 'opacity-50 cursor-not-allowed' : ''}
-            focus:outline-none focus:ring-2 placeholder-gray-500`}
-        />
-        
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          {lcValidating && (
-            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-          )}
-          {lcValidated && !lcValidating && (
-            <CheckCircle className="h-4 w-4 text-green-400" />
-          )}
-          {lcValidationError && !lcValidating && (
-            <AlertTriangle className="h-4 w-4 text-red-400" />
-          )}
-        </div>
-      </div>
-
-      {/* Error message below input */}
-      {lcValidationError && (
-        <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-          <p className="text-red-300 text-sm flex items-center space-x-2">
-            <AlertTriangle className="h-3 w-3" />
-            <span>{lcValidationError}</span>
+      {/* Main Content */}
+      <main className="flex-1 w-full px-8 xl:px-16 py-5">  {/* reduced py from 8 to 4 */}
+        {/* Hero Section */}
+        <div className="text-center mb-6"> {/* reduced mb from 10 to 6 */}
+          <h2 className="text-3xl font-sans font-medium text-white tracking-tight">
+            Upload LC Supporting Documents
+          </h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Securely manage your Letter of Credit documentation with enterprise-grade security
           </p>
         </div>
-      )}
 
-      {/* Validate button below input */}
-      {!lcValidated && !lcValidating && lcNumber && (
-        <button
-          onClick={handleLcValidation}
-          className="mt-3 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
-        >
-          Validate LC Number
-        </button>
+        {/* Main Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+
+          {/* Main Upload Panel */}
+          <div className="lg:col-span-3">
+            <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 overflow-hidden">
+
+              {/* LC Number Section */}
+              <div className="p-6 border-b border-gray-700/50">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Shield className="h-4 w-4 text-blue-400" />
+                  <h3 className="text-lg font-semibold text-white">LC Number Verification</h3>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  {/* LC Number Input Section */}
+                  <div className="flex-1 max-w-md">
+                    <label htmlFor="lcNumber" className="block text-sm font-medium text-gray-300 mb-2">
+                      Enter LC Number for Authentication
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="lcNumber"
+                        value={lcNumber}
+                        onChange={handleLcNumberChange}
+                        onBlur={handleLcBlur}
+                        disabled={uploading || lcValidating}
+                        placeholder="LC-2024-XXXXXXXX"
+                        className={`w-full px-4 py-3 rounded-lg border text-sm transition-all duration-200
+            ${lcValidationError
+                            ? 'border-red-500 bg-red-500/10 text-red-300 focus:ring-red-500/50'
+                            : lcValidated
+                              ? 'border-green-500 bg-green-500/10 text-green-300 focus:ring-green-500/50'
+                              : 'border-gray-600 bg-gray-700/50 text-white focus:ring-blue-500/50 focus:border-blue-500'
+                          }
+            ${uploading || lcValidating ? 'opacity-50 cursor-not-allowed' : ''}
+            focus:outline-none focus:ring-2 placeholder-gray-500`}
+                      />
+
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {lcValidating && (
+                          <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                        {lcValidated && !lcValidating && (
+                          <CheckCircle className="h-4 w-4 text-green-400" />
+                        )}
+                        {lcValidationError && !lcValidating && (
+                          <AlertTriangle className="h-4 w-4 text-red-400" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Error message below input */}
+                    {lcValidationError && (
+                      <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+                        <p className="text-red-300 text-sm flex items-center space-x-2">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>{lcValidationError}</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Validate button below input */}
+                    {!lcValidated && !lcValidating && lcNumber && (
+                      <button
+                        onClick={handleLcValidation}
+                        className="mt-3 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200"
+                      >
+                        Validate LC Number
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Success message parallel to input */}
+                  {lcValidated && (
+                    <div className="flex-shrink-0 mt-8"> {/* mt-8 to align with input field */}
+                      <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="h-3 w-3 text-green-400" />
+                          <p className="text-green-300 text-sm whitespace-nowrap">LC Number validated successfully</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Document Upload Section */}
+              {lcValidated && (
+                <div className="p-6">
+                  <div className="flex items-center space-x-2 mb-5">
+                    <Upload className="h-4 w-4 text-cyan-400" />
+                    <h4 className="text-lg font-semibold text-white">Supporting Documents</h4>
+                  </div>
+
+                  {/* FileUploader Component */}
+                  <div className="mb-6">
+                    <FileUploader
+                      onFilesSelected={handleFilesSelected}
+                      disabled={uploading}
+                    />
+                  </div>
+
+                  {files.length > 0 && (
+                    <div className="mt-6">
+                      <div className="flex items-center text-cyan-400 text-xs font-medium mb-3">
+                        <FileText className="h-3 w-3 mr-2" />
+                        Selected Documents ({files.length})
+                      </div>
+
+                      <div className="bg-gray-700/20 backdrop-blur-sm rounded-lg border border-gray-600/50 overflow-hidden">
+                        <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                          {files.map((file, index) => (
+                            <div
+                              key={`${file.name}_${file.size}_${index}`}
+                              className="group flex items-center justify-between px-3 py-2 hover:bg-gray-700/30 transition-all duration-200 border-b border-gray-600/30 last:border-b-0"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded flex items-center justify-center flex-shrink-0">
+                                  <FileText className="h-3 w-3 text-white" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-white text-xs font-medium truncate max-w-xs" title={file.name}>
+                                    {file.name}
+                                  </p>
+                                  <p className="text-gray-400 text-xs">
+                                    {(file.size / 1024).toFixed(2)} KB
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => removeFile && removeFile(index)}
+                                disabled={uploading}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-white hover:bg-gray-600/50 rounded transition-all duration-200 disabled:opacity-30"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="px-3 py-2 text-xs text-gray-500 bg-gray-800/20 border-t border-gray-600/30">
+                          Showing all {files.length} files • Scroll to view more
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                 {/* Upload Progress */}
+{uploading && (
+  <div className="mb-6 space-y-4">
+    {/* Upload Progress Bar */}
+    <div className="mt-4 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/30 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <Upload className="h-4 w-4 text-blue-400" />
+          <span className="text-sm font-medium text-blue-300">File Upload Progress</span>
+        </div>
+        <span className="text-sm font-bold text-blue-300">
+          {Math.round(uploadProgress)}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-700/50 rounded-full h-2 mb-2">
+        <div
+          className="h-2 rounded-full transition-all duration-300 ease-out bg-gradient-to-r from-blue-500 to-cyan-500"
+          style={{ width: `${uploadProgress}%` }}
+        ></div>
+      </div>
+      <div className="text-xs text-blue-300">
+        {uploadComplete ? (
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-3 w-3 text-blue-400" />
+            <span>All files uploaded successfully</span>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            <span>Uploading files in chunks...</span>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Processing Progress Bar - Only show after upload is complete */}
+    {uploadComplete && (
+      <div className="bg-purple-500/10 backdrop-blur-sm rounded-lg border border-purple-500/30 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <Cpu className="h-4 w-4 text-purple-400" />
+            <span className="text-sm font-medium text-purple-300">Document Processing Progress</span>
+          </div>
+          {/* <span className="text-sm font-bold text-purple-300">
+            {Math.round(processingProgress)}%
+          </span> */}
+        </div>
+        {/* <div className="w-full bg-gray-700/50 rounded-full h-2 mb-2">
+          <div
+            className={`h-2 rounded-full transition-all duration-300 ease-out ${
+              processingStatus === 'completed' 
+                ? 'bg-gradient-to-r from-purple-500 to-violet-500' 
+                : 'bg-gradient-to-r from-purple-500 to-pink-500'
+            }`}
+            style={{ width: `${processingProgress}%` }}
+          ></div>
+        </div> */}
+
+        <div className="text-xs text-purple-300 mb-3">
+          {currentDocName && (
+            <div className="flex items-center space-x-2">
+              {processingStatus === 'in-progress' && (
+                <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {processingStatus === 'completed' && (
+                <CheckCircle className="h-3 w-3 text-purple-400" />
+              )}
+              <span>{currentDocName}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Processing Statistics */}
+        {(processingStatus === 'in-progress' || processingStatus === 'completed') && processedFiles.length > 0 && (
+          <div className="p-3 bg-gray-800/40 rounded-lg border border-purple-500/20">
+            <h5 className="text-xs font-medium text-purple-300 mb-2">
+              Processing Status: {processedFiles.length} files
+            </h5>
+            <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+              <ul className="text-xs space-y-1">
+                {processedFiles.map((file, index) => (
+                  <li key={index} className="flex justify-between items-center py-1">
+                    <span className="truncate max-w-xs text-gray-300" title={file.name}>
+                      {file.name}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      file.error ?
+                        "bg-red-500/20 text-red-300" :
+                        file.status === 'completed' ?
+                          "bg-purple-500/20 text-purple-300" :
+                          "bg-yellow-500/20 text-yellow-300"
+                    }`}>
+                      {file.error ? "Error" : file.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Show remaining files to be processed */}
+        {processingStatus === 'in-progress' && processedFiles.length < files.length && (
+          <div className="mt-2 text-xs text-purple-400">
+            Remaining: {files.length - processedFiles.length} files
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+)}
+
+                  {/* Success Message */}
+                {uploadStatus === 'success' && (
+  <div className="mt-4 mb-10 bg-purple-500/10 border border-purple-500/30 rounded-lg overflow-hidden">
+    {/* Header */}
+    <div className="p-4 border-b border-purple-500/20">
+      <div className="flex items-center space-x-2">
+        <Cpu className="h-4 w-4 text-purple-400" />
+        <h3 className="text-sm font-semibold text-purple-300">Document Processing Progress</h3>
+      </div>
+      <p className="text-purple-400 text-sm mt-1">
+        Processing: Clean On Board Bill of Lading ({processedFiles.length} documents completed)
+      </p>
+    </div>
+
+    {/* Processing Status */}
+    <div className="px-4 py-3 bg-purple-500/5">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-purple-300">Processing Status: {processedFiles.length} files</span>
+      </div>
+    </div>
+
+    {/* Document List */}
+    <div className="bg-purple-900/10">
+      {processedFiles.length > 0 ? (
+        <div className="max-h-48 overflow-y-auto">
+          {processedFiles.map((file, index) => (
+            <div key={index} className="flex items-center justify-between px-4 py-3 border-b border-purple-500/10 last:border-b-0 hover:bg-purple-500/5 transition-colors">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0"></div>
+                <span className="text-gray-300 text-sm font-medium">{file.name}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {file.path && (
+                  <button
+                    onClick={() => window.open(`https://192.168.18.132:50013/supporting_docs/view/${file.path}`, '_blank')}
+                    className="px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 transition-colors flex items-center space-x-1"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span>View</span>
+                  </button>
+                )}
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  file.error
+                    ? "bg-red-500/20 text-red-300"
+                    : file.status === 'completed'
+                    ? "bg-purple-500/20 text-purple-300"
+                    : "bg-yellow-500/20 text-yellow-300"
+                }`}>
+                  {file.error ? "Error" : file.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="px-4 py-6 text-center">
+          <p className="text-gray-400 text-sm">No processed files to display</p>
+        </div>
       )}
     </div>
 
-    {/* Success message parallel to input */}
-    {lcValidated && (
-      <div className="flex-shrink-0 mt-8"> {/* mt-8 to align with input field */}
-        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-          <div className="flex items-center space-x-2">
-            <CheckCircle className="h-3 w-3 text-green-400" />
-            <p className="text-green-300 text-sm whitespace-nowrap">LC Number validated successfully</p>
-          </div>
+    {/* Footer with additional info if needed */}
+    {processedFiles.some(file => file.error) && (
+      <div className="px-4 py-3 bg-red-500/5 border-t border-red-500/20">
+        <div className="flex items-center space-x-2">
+          <AlertTriangle className="h-4 w-4 text-red-400" />
+          <p className="text-red-300 text-sm">Some files encountered errors during processing</p>
         </div>
       </div>
     )}
   </div>
-</div>
+)}
 
-            {/* Document Upload Section */}
-            {lcValidated && (
-              <div className="p-6">
-                <div className="flex items-center space-x-2 mb-5">
-                  <Upload className="h-4 w-4 text-cyan-400" />
-                  <h4 className="text-lg font-semibold text-white">Supporting Documents</h4>
-                </div>
-
-                {/* FileUploader Component */}
-                <div className="mb-6">
-                  <FileUploader 
-                    onFilesSelected={handleFilesSelected}
-                    disabled={uploading}
-                  />
-                </div>
-
-              {files.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center text-cyan-400 text-xs font-medium mb-3">
-            <FileText className="h-3 w-3 mr-2" />
-            Selected Documents ({files.length})
-          </div>
-          
-          <div className="bg-gray-700/20 backdrop-blur-sm rounded-lg border border-gray-600/50 overflow-hidden">
-            <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-              {files.map((file, index) => (
-                <div 
-                  key={`${file.name}_${file.size}_${index}`} 
-                  className="group flex items-center justify-between px-3 py-2 hover:bg-gray-700/30 transition-all duration-200 border-b border-gray-600/30 last:border-b-0"
-                >
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded flex items-center justify-center flex-shrink-0">
-                      <FileText className="h-3 w-3 text-white" />
+                  {/* Error Messages using ErrorDropdown component */}
+                  {errors.length > 0 && (
+                    <div className="mb-6">
+                      <ErrorDropdown errors={errors} />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-white text-xs font-medium truncate max-w-xs" title={file.name}>
-                        {file.name}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        {(file.size / 1024).toFixed(2)} KB
-                      </p>
+                  )}
+
+                  {/* Warning/Error Messages */}
+                  {uploadStatus === 'warning' && errorMessage && (
+                    <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                        <p className="text-yellow-300 text-sm">{errorMessage}</p>
+                      </div>
                     </div>
+                  )}
+
+                  {uploadStatus === 'error' && errorMessage && !errors.length && (
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <XCircle className="h-4 w-4 text-red-400" />
+                        <p className="text-red-300 text-sm">{errorMessage}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Unsupported File Error */}
+                  {unsupportedFileError && (
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <XCircle className="h-4 w-4 text-red-400" />
+                        <p className="text-red-300 text-sm">{unsupportedFileError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="mt-4 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
+                    <button
+                      onClick={resetUpload}
+                      disabled={false} // Always enable the button so users can cancel
+                      className="px-5 py-2 border border-gray-600 text-gray-300 text-sm font-medium rounded-lg hover:border-gray-500 hover:bg-gray-700/30 focus:outline-none focus:ring-2 focus:ring-gray-500/50 transition-all duration-200"
+                    >
+                      {uploading ? 'Cancel Upload' : uploadStatus === 'success' ? 'Upload More Documents' : 'Clear All'}
+                    </button>
+
+                    <button
+                      onClick={handleUpload}
+                      disabled={uploading || files.length === 0 || uploadStatus === 'success'}
+                      className="px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-sm font-semibold rounded-lg hover:from-cyan-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {uploading ? 'Processing...' : uploadStatus === 'success' ? 'Upload Complete' : 'Upload Documents'}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeFile && removeFile(index)}
-                    disabled={uploading}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-white hover:bg-gray-600/50 rounded transition-all duration-200 disabled:opacity-30"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
                 </div>
-              ))}
+              )}
             </div>
-            <div className="px-3 py-2 text-xs text-gray-500 bg-gray-800/20 border-t border-gray-600/30">
-              Showing all {files.length} files • Scroll to view more
-            </div>
           </div>
-        </div>
-      )}
 
-                {/* Upload Progress */}
-                {uploading && (
-                  <div className="mb-6 space-y-4">
-                    {/* Upload Progress Bar */}
-                    <div className="mt-4 bg-blue-500/10 backdrop-blur-sm rounded-lg border border-blue-500/30 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-2">
-                          <Upload className="h-4 w-4 text-blue-400" />
-                          <span className="text-sm font-medium text-blue-300">File Upload Progress</span>
-                        </div>
-                        <span className="text-sm font-bold text-blue-300">
-                          {Math.round(uploadProgress)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-700/50 rounded-full h-2 mb-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-300 ease-out ${
-                            uploadComplete ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'
-                          }`}
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-blue-300">
-                        {uploadComplete ? (
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="h-3 w-3 text-green-400" />
-                            <span>All files uploaded successfully</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                            <span>Uploading files in chunks...</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Processing Progress Bar - Only show after upload is complete */}
-                    {uploadComplete && (
-                      <div className="bg-purple-500/10 backdrop-blur-sm rounded-lg border border-purple-500/30 p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2">
-                            <Cpu className="h-4 w-4 text-purple-400" />
-                            <span className="text-sm font-medium text-purple-300">Document Processing Progress</span>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-purple-300 mb-3">
-                          {currentDocName && (
-                            <div className="flex items-center space-x-2">
-                              {processingStatus === 'in-progress' && (
-                                <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                              {processingStatus === 'completed' && (
-                                <CheckCircle className="h-3 w-3 text-green-400" />
-                              )}
-                              <span>{currentDocName}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Processing Statistics */}
-                        {(processingStatus === 'in-progress' || processingStatus === 'completed') && processedFiles.length > 0 && (
-                          <div className="p-3 bg-gray-800/40 rounded-lg border border-purple-500/20">
-                            <h5 className="text-xs font-medium text-purple-300 mb-2">
-                              Processing Status: {processedFiles.length} files
-                            </h5>
-                            <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-                              <ul className="text-xs space-y-1">
-                                {processedFiles.map((file, index) => (
-                                  <li key={index} className="flex justify-between items-center py-1">
-                                    <span className="truncate max-w-xs text-gray-300" title={file.name}>
-                                      {file.name}
-                                    </span>
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                      file.error ? 
-                                        "bg-red-500/20 text-red-300" : 
-                                        file.status === 'completed' ? 
-                                          "bg-green-500/20 text-green-300" : 
-                                          "bg-yellow-500/20 text-yellow-300"
-                                    }`}>
-                                      {file.error ? "Error" : file.status}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Show remaining files to be processed */}
-                        {processingStatus === 'in-progress' && processedFiles.length < files.length && (
-                          <div className="mt-2 text-xs text-purple-400">
-                            Remaining: {files.length - processedFiles.length} files
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Success Message */}
-                {uploadStatus === 'success' && (
-                  <div className="mt-4 mb-10 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h3 className="text-sm font-semibold text-green-300 mb-1">Upload Complete!</h3>
-                        <p className="text-green-400 text-sm mb-3">Your documents have been processed successfully.</p>
-
-                        {/* Successfully Processed Files */}
-                        {processedFiles.filter(file => !file.error).length > 0 && (
-                          <div className="mt-3">
-                            <h4 className="text-sm font-medium text-green-300 mb-2">Processed Files:</h4>
-                            <ul className="space-y-1">
-                              {processedFiles.filter(file => !file.error).map((file, index) => (
-                                <li key={index} className="flex items-center justify-between py-1">
-                                  <span className="text-green-400 text-sm">{file.name}</span>
-                                  {file.path && (
-                                    <button
-                                      onClick={() => window.open(`https://192.168.18.132:50013/supporting_docs/view/${file.path}`, '_blank')}
-                                      className="ml-2 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30 transition-colors"
-                                    >
-                                      View Document
-                                    </button>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Error Messages using ErrorDropdown component */}
-                {errors.length > 0 && (
-                  <div className="mb-6">
-                    <ErrorDropdown errors={errors} />
-                  </div>
-                )}
-
-                {/* Warning/Error Messages */}
-                {uploadStatus === 'warning' && errorMessage && (
-                  <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                      <p className="text-yellow-300 text-sm">{errorMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                {uploadStatus === 'error' && errorMessage && !errors.length && (
-                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <XCircle className="h-4 w-4 text-red-400" />
-                      <p className="text-red-300 text-sm">{errorMessage}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Unsupported File Error */}
-                {unsupportedFileError && (
-                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <XCircle className="h-4 w-4 text-red-400" />
-                      <p className="text-red-300 text-sm">{unsupportedFileError}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-              <div className="mt-4 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
-                 <button
-  onClick={resetUpload}
-  disabled={false} // Always enable the button so users can cancel
-  className="px-5 py-2 border border-gray-600 text-gray-300 text-sm font-medium rounded-lg hover:border-gray-500 hover:bg-gray-700/30 focus:outline-none focus:ring-2 focus:ring-gray-500/50 transition-all duration-200"
->
-  {uploading ? 'Cancel Upload' : uploadStatus === 'success' ? 'Upload More Documents' : 'Clear All'}
-</button>
-
-                  <button
-                    onClick={handleUpload}
-                    disabled={uploading || files.length === 0 || uploadStatus === 'success'}
-                    className="px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-sm font-semibold rounded-lg hover:from-cyan-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {uploading ? 'Processing...' : uploadStatus === 'success' ? 'Upload Complete' : 'Upload Documents'}
-                  </button>
-                </div>
+          {/* Sidebar */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Security Card */}
+            <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 p-5">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-3">
+                <Shield className="h-5 w-5 text-white" />
               </div>
-            )}
+              <h3 className="text-base font-semibold text-white mb-2">Enterprise Security</h3>
+              <p className="text-gray-400 text-xs leading-relaxed">Bank-grade 256-bit encryption with multi-layer security protocols</p>
+            </div>
+
+            {/* Performance Card */}
+            <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 p-5">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-3">
+                <Upload className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-base font-semibold text-white mb-2">Lightning Fast</h3>
+              <p className="text-gray-400 text-xs leading-relaxed">Optimized chunked uploads with real-time processing and validation</p>
+            </div>
+
+            {/* Support Card */}
+            <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl p-5 text-white">
+              <h3 className="text-base font-semibold mb-2">Need Help?</h3>
+              <p className="text-purple-100 text-xs mb-3">Our support team is available 24/7 to assist you</p>
+              <button className="w-full px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
+                Contact Support
+              </button>
+            </div>
           </div>
         </div>
+      </main>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-4">
-          {/* Security Card */}
-          <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 p-5">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-3">
-              <Shield className="h-5 w-5 text-white" />
+      {/* Fixed Footer */}
+      <footer className="bg-gray-800/30 backdrop-blur-lg border-t border-gray-700/50 mt-auto">
+        <div className="w-full px-8 xl:px-16 py-4">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+            <div className="text-center md:text-left">
+              <p className="text-gray-400 text-sm">
+                &copy; {new Date().getFullYear()} LC Comply Trade
+              </p>
             </div>
-            <h3 className="text-base font-semibold text-white mb-2">Enterprise Security</h3>
-            <p className="text-gray-400 text-xs leading-relaxed">Bank-grade 256-bit encryption with multi-layer security protocols</p>
-          </div>
-
-          {/* Performance Card */}
-          <div className="bg-gray-800/40 backdrop-blur-xl rounded-xl border border-gray-700/50 p-5">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-3">
-              <Upload className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="text-base font-semibold text-white mb-2">Lightning Fast</h3>
-            <p className="text-gray-400 text-xs leading-relaxed">Optimized chunked uploads with real-time processing and validation</p>
-          </div>
-
-          {/* Support Card */}
-          <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl p-5 text-white">
-            <h3 className="text-base font-semibold mb-2">Need Help?</h3>
-            <p className="text-purple-100 text-xs mb-3">Our support team is available 24/7 to assist you</p>
-            <button className="w-full px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors">
-              Contact Support
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    {/* Fixed Footer */}
-    <footer className="bg-gray-800/30 backdrop-blur-lg border-t border-gray-700/50 mt-auto">
-      <div className="w-full px-8 xl:px-16 py-4">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-          <div className="text-center md:text-left">
-            <p className="text-gray-400 text-sm">
-              &copy; {new Date().getFullYear()} LC Comply Trade
-            </p>
-          </div>
-          {/* <div className="flex space-x-6 text-xs text-gray-500">
+            {/* <div className="flex space-x-6 text-xs text-gray-500">
             <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-gray-300 transition-colors">Terms of Service</a>
             <a href="#" className="hover:text-gray-300 transition-colors">Support</a>
           </div> */}
+          </div>
         </div>
-      </div>
-    </footer>
-  </div>
-);
+      </footer>
+    </div>
+  );
 };
 
 export default LCSupportingDocsUploader;

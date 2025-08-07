@@ -137,22 +137,22 @@ const LCPDFViewer = () => {
     // Function to download all files with delay
     const downloadAllFiles = async () => {
         if (downloadingAll) return;
-        
+
         setDownloadingAll(true);
-        
+
         for (let i = 0; i < pdfDocuments.length; i++) {
             const pdf = pdfDocuments[i];
             if (pdf.url) {
                 const filename = `${pdf.name || `${lcNumber}_document_${i + 1}`}.pdf`;
                 await downloadFile(pdf.url, filename);
-                
+
                 // Add delay between downloads to prevent browser blocking
                 if (i < pdfDocuments.length - 1) {
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         }
-        
+
         setDownloadingAll(false);
     };
 
@@ -311,8 +311,8 @@ const LCPDFViewer = () => {
                                             key={pdf.originalIndex}
                                             onClick={() => handleTabClick(pdf.originalIndex)}
                                             className={`w-full text-left p-2 rounded-lg transition-all duration-200 ${selectedPdfIndex === pdf.originalIndex
-                                                    ? 'bg-blue-600 shadow-lg transform scale-[1.02]'
-                                                    : 'bg-slate-700 hover:bg-slate-600 hover:shadow-md'
+                                                ? 'bg-blue-600 shadow-lg transform scale-[1.02]'
+                                                : 'bg-slate-700 hover:bg-slate-600 hover:shadow-md'
                                                 }`}
                                         >
                                             <div className="flex items-center justify-between">

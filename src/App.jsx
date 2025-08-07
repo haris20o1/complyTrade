@@ -293,6 +293,8 @@ import { WebSocketProvider } from "./context/WebSocketContext";
 import LCPDFViewer from "./components/admin/LCPDFViewer";
 import ICStatusOverview from "./components/SuperAdmin/LCstats";
 import Settings from "./components/setting/settings";
+import PasswordResetManagement from "./components/IT_Manager/resetPassword";
+import PasswordRequest from "./components/IT_Manager/PasswordRequest";
 // import { Settings } from "lucide-react";
 
 
@@ -363,6 +365,10 @@ function App() {
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/policies" element={<BankPolicyUploadPage />} />
                 <Route path="/audit" element={<RequestAuditPage />} />
+                <Route path="/reset-password" element={<PasswordResetManagement />} />
+                <Route path="/password-request" element={<PasswordRequest />} />
+                
+                
               </Route>
 
               {/* Super Admin User routes */}

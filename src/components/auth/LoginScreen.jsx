@@ -120,7 +120,7 @@ const LoginScreen = () => {
           <span className="ml-3 text-white font-semibold tracking-wide">Comply Trade</span>
         </div> */}
         <div className="ml-auto text-gray-400 text-sm">
-          <span>Enterprise Banking Suite</span>
+          <span>Enterprise Trade Suite</span>
         </div>
       </div>
 

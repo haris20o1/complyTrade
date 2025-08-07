@@ -305,14 +305,46 @@ const CompletedLCPage = () => {
       setDownloading(false);
     }
   };
+   const handleOpenLCDocument = async (lcNumber) => {
+    try {
+      setDownloading(true);
+
+      // Instead of opening PDF directly, open the new PDF viewer page
+      const pdfViewerUrl = `/lc-pdf-viewer/${encodeURIComponent(lcNumber)}`;
+      window.open(pdfViewerUrl, '_blank');
+
+      console.log(`Opened PDF viewer for ${lcNumber} in new tab`);
+    } catch (err) {
+      console.error(`Failed to open PDF viewer for ${lcNumber}:`, err);
+      alert('Failed to open PDF viewer. Please try again later.');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   // Table columns configuration
   const columns = [
+    // {
+    //   key: 'lcNumber',
+    //   header: 'LC Number',
+    //   render: (row) => (
+    //     <div className="font-medium text-gray-900">{row.lcNumber}</div>
+    //   )
+    // },
     {
       key: 'lcNumber',
       header: 'LC Number',
       render: (row) => (
-        <div className="font-medium text-gray-900">{row.lcNumber}</div>
+        <div className="font-medium text-gray-900">
+          {/* Make all LC numbers clickable regardless of document status */}
+          <button
+            className="text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+            onClick={() => handleOpenLCDocument(row.lcNumber)}
+            disabled={downloading}
+          >
+            {row.lcNumber}
+          </button>
+        </div>
       )
     },
     {
