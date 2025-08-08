@@ -4,9 +4,9 @@ const DocumentHeader = ({ mainPoint, onDocumentClick }) => {
   return (
     <div className="mb-6">
       {/* Swift Point Title - Clean and Bold */}
-      <h1 className="text-xl font-bold text-gray-900 mb-4 leading-tight">
+     <h2 className="text-mm font-semibold text-gray-900 mb-2">
         {mainPoint.swift_point || mainPoint.text}
-      </h1>
+      </h2>
       
       {/* Document Info Row */}
       <div className="flex items-center justify-between mb-6">
